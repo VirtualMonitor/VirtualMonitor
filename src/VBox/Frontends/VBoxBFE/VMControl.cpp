@@ -1,0 +1,190 @@
+/** @file
+ *
+ * VBox frontends: Basic Frontend (BFE):
+ * VBoxBFE VM control routines
+ *
+ */
+
+/*
+ * Copyright (C) 2006-2007 Oracle Corporation
+ *
+ * This file is part of VirtualBox Open Source Edition (OSE), as
+ * available from http://www.virtualbox.org. This file is free software;
+ * you can redistribute it and/or modify it under the terms of the GNU
+ * General Public License (GPL) as published by the Free Software
+ * Foundation, in version 2 as it comes in the "COPYING" file of the
+ * VirtualBox OSE distribution. VirtualBox OSE is distributed in the
+ * hope that it will be useful, but WITHOUT ANY WARRANTY of any kind.
+ */
+
+#include <iprt/stream.h>
+#include <VBox/err.h>
+#include "DisplayImpl.h"
+#include "ConsoleImpl.h"
+#include "VBoxBFE.h"
+#include "VMControl.h"
+
+/**
+ * Fullscreen / Windowed toggle.
+ */
+int
+VMCtrlToggleFullscreen(void)
+{
+    /* not allowed */
+    if (!gfAllowFullscreenToggle)
+        return VERR_ACCESS_DENIED;
+
+    gFramebuffer->setFullscreen(!gFramebuffer->getFullscreen());
+
+    /*
+     * We have switched from/to fullscreen, so request a full
+     * screen repaint, just to be sure.
+     */
+    gDisplay->InvalidateAndUpdate();
+
+    return VINF_SUCCESS;
+}
+
+/**
+ * Pause the VM.
+ */
+int
+VMCtrlPause(void)
+{
+    if (machineState != VMSTATE_RUNNING)
+        return VERR_VM_INVALID_VM_STATE;
+
+#if 0
+    if (gConsole->inputGrabbed())
+        gConsole->inputGrabEnd();
+
+    int rcVBox = VMR3ReqCallWait(gpVM, VMCPUID_ANY, (PFNRT)VMR3Suspend, 1, gpVM);
+    AssertRC(rcVBox);
+#endif
+    return VINF_SUCCESS;
+}
+
+/**
+ * Resume the VM.
+ */
+int
+VMCtrlResume(void)
+{
+    if (machineState != VMSTATE_SUSPENDED)
+        return VERR_VM_INVALID_VM_STATE;
+
+#if 0
+    int rcVBox = VMR3ReqCallWait(gpVM, VMCPUID_ANY, (PFNRT)VMR3Resume, 1, gpVM);
+    AssertRC(rcVBox);
+#endif
+    return VINF_SUCCESS;
+}
+
+/**
+ * Reset the VM
+ */
+int
+VMCtrlReset(void)
+{
+#if 0
+    int rcVBox = VMR3ReqCallWait(gpVM, VMCPUID_ANY, (PFNRT)VMR3Reset, 1, gpVM);
+    AssertRC(rcVBox);
+#endif
+    return VINF_SUCCESS;
+}
+
+/**
+ * Send ACPI power button press event
+ */
+int
+VMCtrlACPIPowerButton(void)
+{
+#if 0
+    PPDMIBASE pBase;
+    int vrc = PDMR3QueryDeviceLun (gpVM, "acpi", 0, 0, &pBase);
+    if (RT_SUCCESS (vrc))
+    {
+        Assert (pBase);
+        PPDMIACPIPORT pPort = PDMIBASE_QUERY_INTERFACE(pBase, PDMIACPIPORT);
+        vrc = pPort ? pPort->pfnPowerButtonPress(pPort) : VERR_INVALID_POINTER;
+    }
+#endif
+    return VINF_SUCCESS;
+}
+
+/**
+ * Send ACPI sleep button press event
+ */
+int
+VMCtrlACPISleepButton(void)
+{
+#if 0
+    PPDMIBASE pBase;
+    int vrc = PDMR3QueryDeviceLun (gpVM, "acpi", 0, 0, &pBase);
+    if (RT_SUCCESS (vrc))
+    {
+        Assert (pBase);
+        PPDMIACPIPORT pPort = PDMIBASE_QUERY_INTERFACE(pBase, PDMIACPIPORT);
+        vrc = pPort ? pPort->pfnSleepButtonPress(pPort) : VERR_INVALID_POINTER;
+    }
+#endif
+    return VINF_SUCCESS;
+}
+
+/**
+ * Worker thread while saving the VM
+ */
+DECLCALLBACK(int) VMSaveThread(RTTHREAD Thread, void *pvUser)
+{
+#if 0
+    void (*pfnQuit)(void) = (void(*)(void))pvUser;
+    int rc;
+
+    startProgressInfo("Saving");
+    rc = VMR3ReqCallWait(gpVM, VMCPUID_ANY,
+                         (PFNRT)VMR3Save, 5, gpVM, g_pszStateFile,
+                         false /*fContinueAftewards*/, &callProgressInfo, (uintptr_t)NULL);
+    AssertRC(rc);
+    endProgressInfo();
+    pfnQuit();
+#endif
+
+    return VINF_SUCCESS;
+}
+
+/*
+ * Save the machine's state
+ */
+int
+VMCtrlSave(void (*pfnQuit)(void))
+{
+#if 0
+    int rc;
+
+    if (!g_pszStateFile || !*g_pszStateFile)
+        return VERR_INVALID_PARAMETER;
+
+    gConsole->resetKeys();
+    RTThreadYield();
+    if (gConsole->inputGrabbed())
+        gConsole->inputGrabEnd();
+    RTThreadYield();
+
+    if (machineState == VMSTATE_RUNNING)
+    {
+        rc = VMR3ReqCallWait(gpVM, VMCPUID_ANY, (PFNRT)VMR3Suspend, 1, gpVM);
+        AssertRC(rc);
+    }
+
+    RTTHREAD thread;
+    rc = RTThreadCreate(&thread, VMSaveThread, (void*)pfnQuit, 0,
+                        RTTHREADTYPE_MAIN_WORKER, 0, "Save");
+    if (RT_FAILURE(rc))
+    {
+        RTPrintf("Error: Thread creation failed with %d\n", rc);
+        return rc;
+    }
+#endif
+
+    return VINF_SUCCESS;
+}

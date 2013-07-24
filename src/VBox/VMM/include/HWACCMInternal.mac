@@ -1,0 +1,61 @@
+;$Id: HWACCMInternal.mac $
+;; @file
+; HWACCM - Internal header file.
+;
+;
+; Copyright (C) 2006-2007 Oracle Corporation
+;
+; This file is part of VirtualBox Open Source Edition (OSE), as
+; available from http://www.virtualbox.org. This file is free software;
+; you can redistribute it and/or modify it under the terms of the GNU
+; General Public License (GPL) as published by the Free Software
+; Foundation, in version 2 as it comes in the "COPYING" file of the
+; VirtualBox OSE distribution. VirtualBox OSE is distributed in the
+; hope that it will be useful, but WITHOUT ANY WARRANTY of any kind.
+;
+
+%define VMX_USE_CACHED_VMCS_ACCESSES
+%define VBOX_WITH_AUTO_MSR_LOAD_RESTORE
+
+;Maximum number of cached entries.
+%define VMCSCACHE_MAX_ENTRY                             128
+
+; Structure for storing read and write VMCS actions.
+struc VMCSCACHE
+%ifdef VBOX_WITH_CRASHDUMP_MAGIC
+    .aMagic                   resb    16
+    .uMagic                   resq    1
+    .u64TimeEntry             resq    1
+    .u64TimeSwitch            resq    1
+    .cResume                  resq    1
+    .interPD                  resq    1
+    .pSwitcher                resq    1
+    .uPos                     resd    1
+    .idCpu                    resd    1
+%endif
+    .cr2                      resq    1
+    .Write.cValidEntries      resd    1
+    .Write.uAlignment         resd    1
+    .Write.aField             resd    VMCSCACHE_MAX_ENTRY
+    .Write.aFieldVal          resq    VMCSCACHE_MAX_ENTRY
+    .Read.cValidEntries       resd    1
+    .Read.uAlignment          resd    1
+    .Read.aField              resd    VMCSCACHE_MAX_ENTRY
+    .Read.aFieldVal           resq    VMCSCACHE_MAX_ENTRY
+%ifdef DEBUG
+    .TestIn.HCPhysCpuPage     resq    1
+    .TestIn.HCPhysVMCS        resq    1
+    .TestIn.pCache            resq    1
+    .TestIn.pCtx              resq    1
+    .TestOut.HCPhysVMCS       resq    1
+    .TestOut.pCache           resq    1
+    .TestOut.pCtx             resq    1
+    .TestOut.eflags           resq    1
+    .TestOut.cr8              resq    1
+    .ScratchPad.param1        resq    1
+    .ScratchPad.param2        resq    1
+    .ScratchPad.param3        resq    1
+    .ScratchPad.param4        resq    1
+%endif
+endstruc
+

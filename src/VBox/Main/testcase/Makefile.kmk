@@ -1,0 +1,210 @@
+# $Id: Makefile.kmk $
+## @file
+# Sub-Makefile for the VBox API testcases.
+#
+
+#
+# Copyright (C) 2004-2012 Oracle Corporation
+#
+# This file is part of VirtualBox Open Source Edition (OSE), as
+# available from http://www.virtualbox.org. This file is free software;
+# you can redistribute it and/or modify it under the terms of the GNU
+# General Public License (GPL) as published by the Free Software
+# Foundation, in version 2 as it comes in the "COPYING" file of the
+# VirtualBox OSE distribution. VirtualBox OSE is distributed in the
+# hope that it will be useful, but WITHOUT ANY WARRANTY of any kind.
+#
+
+SUB_DEPTH = ../../../..
+include $(KBUILD_PATH)/subheader.kmk
+
+#
+# Target and globals (small mess)
+#
+ifndef VBOX_ONLY_SDK
+ if defined(VBOX_WITH_TESTCASES)
+  PROGRAMS       += \
+	tstAPI \
+	$(if $(VBOX_OSE),,tstOVF) \
+	$(if $(VBOX_WITH_XPCOM),tstVBoxAPILinux,tstVBoxAPIWin) \
+	$(if $(VBOX_WITH_RESOURCE_USAGE_API),tstCollector,) \
+	$(if $(VBOX_WITH_GUEST_CONTROL),tstGuestCtrlParseBuffer,) \
+	$(if $(VBOX_WITH_GUEST_CONTROL),tstGuestCtrlContextID,)
+  PROGRAMS.linux += \
+	$(if $(VBOX_WITH_USB),tstUSBProxyLinux,)
+ endif # !VBOX_WITH_TESTCASES
+endif # !VBOX_ONLY_SDK
+if defined(VBOX_ONLY_SDK) || !defined(VBOX_WITH_XPCOM)
+ INSTALLS += samplesMSCOM
+endif
+if defined(VBOX_ONLY_SDK) || defined(VBOX_WITH_XPCOM)
+ INSTALLS += samplesXPCOM
+endif
+
+
+#
+# The samples
+#
+samplesMSCOM_MODE = a+r,u+w
+samplesMSCOM_INST = $(INST_SDK)bindings/mscom/samples/
+samplesMSCOM_SOURCES = tstVBoxAPIWin.cpp
+
+samplesXPCOM_MODE = a+r,u+w
+samplesXPCOM_INST = $(INST_SDK)bindings/xpcom/samples/
+samplesXPCOM_SOURCES = tstVBoxAPILinux.cpp makefile.tstVBoxAPILinux=>Makefile
+
+
+#
+# tstAPI
+#
+tstAPI_TEMPLATE = VBOXMAINCLIENTEXE
+#tstAPI_INST = $(INST_SDK)bindings/gluecom/samples/
+tstAPI_SOURCES  = tstAPI.cpp
+ifeq ($(KBUILD_TARGET),win) ## @todo just add this to the template.
+tstAPI_DEPS = $(VBOX_PATH_SDK)/bindings/mscom/include/VirtualBox.h
+else
+tstAPI_DEPS = $(VBOX_PATH_SDK)/bindings/xpcom/include/VirtualBox_XPCOM.h
+endif
+ifdef VBOX_WITH_RESOURCE_USAGE_API
+tstAPI_DEFS += VBOX_WITH_RESOURCE_USAGE_API
+endif
+
+
+#
+# tstOVF
+#
+tstOVF_TEMPLATE = VBOXMAINCLIENTEXE
+#tstOVF_INST = $(INST_SDK)bindings/gluecom/samples/
+tstOVF_SOURCES  = tstOVF.cpp
+ifeq ($(KBUILD_TARGET),win) ## @todo just add this to the template.
+tstOVF_DEPS = $(VBOX_PATH_SDK)/bindings/mscom/include/VirtualBox.h
+else
+tstOVF_DEPS = $(VBOX_PATH_SDK)/bindings/xpcom/include/VirtualBox_XPCOM.h
+endif
+ifdef VBOX_WITH_RESOURCE_USAGE_API
+tstOVF_DEFS += VBOX_WITH_RESOURCE_USAGE_API
+endif
+
+ifndef VBOX_OSE
+#
+# OVF test data.
+#
+INSTALLS += ovf-testcases
+ovf-testcases_MODE = a+r,u+w
+ovf-testcases_INST = $(INST_BIN)ovf-testcases/
+ovf-testcases_SOURCES = \
+	ovf-dummy.vmdk \
+	ovf-joomla-0.9/joomla-1.1.4-ovf.ovf=>ovf-joomla-0.9/joomla-1.1.4-ovf.ovf \
+	ovf-winhost-audio-nodisks/WinXP.ovf=>ovf-winhost-audio-nodisks/WinXP.ovf \
+	ovf-winxp-vbox-sharedfolders/winxp.ovf=>ovf-winxp-vbox-sharedfolders/winxp.ovf
+endif
+
+
+#
+# tstVBoxAPILinux
+#
+# We only build the testcase here to make sure it builds.
+# It comes with a custom makefile which should be tested as well!
+#
+tstVBoxAPILinux_TEMPLATE = VBOXR3EXE
+tstVBoxAPILinux_SOURCES  = tstVBoxAPILinux.cpp
+tstVBoxAPILinux_CXXFLAGS = -Wno-non-virtual-dtor -fshort-wchar
+tstVBoxAPILinux_LDFLAGS.solaris += '$(VBOX_GCC_RPATH_OPT)$$(VBOX_ORIGIN)/../../..'
+ifdef VBOX_WITH_XPCOM_NAMESPACE_CLEANUP
+ tstVBoxAPILinux_DEFS += VBOX_WITH_XPCOM_NAMESPACE_CLEANUP
+endif
+tstVBoxAPILinux_INCS     = \
+	$(VBOX_XPCOM_INCS) \
+	$(VBOX_PATH_SDK)/bindings/xpcom/include
+tstVBoxAPILinux_LIBPATH  = $(LIBPATH_XPCOM)
+tstVBoxAPILinux_LIBS     = $(LIB_XPCOM) $(LIB_RUNTIME)
+tstVBoxAPILinux_DEPS     = \
+	$(VBOX_PATH_SDK)/bindings/xpcom/include/VirtualBox_XPCOM.h
+
+
+#
+# tstVBoxAPIWin
+#
+tstVBoxAPIWin_TEMPLATE = VBOXMAINCLIENTEXE
+tstVBoxAPIWin_SOURCES  = \
+	tstVBoxAPIWin.cpp \
+	$(VBOX_PATH_SDK)/bindings/mscom/lib/VirtualBox_i.c
+tstVBoxAPIWin_DEPS     = \
+	$(VBOX_PATH_SDK)/bindings/mscom/include/VirtualBox.h
+
+
+#
+# tstCollector
+#
+tstCollector_TEMPLATE = VBOXMAINCLIENTEXE
+tstCollector_SOURCES  = \
+	tstCollector.cpp \
+	../src-server/Performance.cpp
+tstCollector_INCS     = ../include
+tstCollector_DEFS    += VBOX_COLLECTOR_TEST_CASE
+tstCollector_LDFLAGS.darwin  += -lproc
+tstCollector_LDFLAGS.solaris += -lkstat -lnvpair
+tstCollector_LDFLAGS.win     += psapi.lib powrprof.lib
+
+
+#
+# tstGuestCtrlParseBuffer
+#
+tstGuestCtrlParseBuffer_TEMPLATE = VBOXMAINCLIENTEXE
+tstGuestCtrlParseBuffer_DEFS    += VBOX_WITH_HGCM VBOX_WITH_GUEST_CONTROL
+tstGuestCtrlParseBuffer_SOURCES  = \
+	tstGuestCtrlParseBuffer.cpp \
+	../src-client/GuestCtrlPrivate.cpp
+tstGuestCtrlParseBuffer_INCS     = ../include
+ifeq ($(KBUILD_TARGET),win) ## @todo just add this to the template.
+ tstGuestCtrlParseBuffer_DEPS    = $(VBOX_PATH_SDK)/bindings/mscom/include/VirtualBox.h
+else
+ tstGuestCtrlParseBuffer_DEPS    = $(VBOX_PATH_SDK)/bindings/xpcom/include/VirtualBox_XPCOM.h
+endif
+
+
+#
+# tstGuestCtrlContextID
+#
+tstGuestCtrlContextID_TEMPLATE = VBOXMAINCLIENTEXE
+tstGuestCtrlContextID_DEFS    += VBOX_WITH_HGCM VBOX_WITH_GUEST_CONTROL
+tstGuestCtrlContextID_SOURCES  = \
+	tstGuestCtrlContextID.cpp \
+	../src-client/GuestCtrlPrivate.cpp
+tstGuestCtrlContextID_INCS     = ../include
+ifeq ($(KBUILD_TARGET),win) ## @todo just add this to the template.
+ tstGuestCtrlContextID_DEPS    = $(VBOX_PATH_SDK)/bindings/mscom/include/VirtualBox.h
+else
+ tstGuestCtrlContextID_DEPS    = $(VBOX_PATH_SDK)/bindings/xpcom/include/VirtualBox_XPCOM.h
+endif
+
+
+#
+# tstUSBProxyLinux
+#
+tstUSBProxyLinux_TEMPLATE  = VBOXR3TSTNPEXE
+tstUSBProxyLinux_SOURCES   = \
+	tstUSBProxyLinux.cpp \
+	../src-server/linux/USBProxyServiceLinux.cpp \
+	../src-server/linux/USBGetDevices.cpp
+tstUSBProxyLinux_INCS      = \
+	. \
+	../include \
+	$(VBOX_PATH_SDK)/bindings/xpcom/include \
+	$(VBOX_PATH_SDK)/bindings/xpcom/include/nsprpub \
+	$(VBOX_PATH_SDK)/bindings/xpcom/include/xpcom
+tstUSBProxyLinux_DEFS      = \
+	UNIT_TEST \
+	VBOX_WITH_USB \
+	VBOX_USB_WITH_SYSFS \
+	VBOX_WITH_XPCOM
+tstUSBProxyLinux_DEPS     = \
+	$(VBOX_PATH_SDK)/bindings/xpcom/include/VirtualBox_XPCOM.h
+tstUSBProxyLinux_LIBS     += \
+	$(PATH_OUT)/lib/USBLib.a \
+	$(PATH_OUT)/lib/VBoxCOM.a
+
+
+# generate rules.
+include $(FILE_KBUILD_SUB_FOOTER)
+

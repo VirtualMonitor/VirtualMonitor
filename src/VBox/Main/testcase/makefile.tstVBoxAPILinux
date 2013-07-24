@@ -1,0 +1,48 @@
+#
+# tstVBoxAPILinux makefile
+#
+#
+# Copyright (C) 2006-2007 Oracle Corporation
+#
+# This file is part of VirtualBox Open Source Edition (OSE), as
+# available from http://www.virtualbox.org. This file is free software;
+# you can redistribute it and/or modify it under the terms of the GNU
+# General Public License (GPL) as published by the Free Software
+# Foundation, in version 2 as it comes in the "COPYING" file of the
+# VirtualBox OSE distribution. VirtualBox OSE is distributed in the
+# hope that it will be useful, but WITHOUT ANY WARRANTY of any kind.
+#
+
+PATH_XPCOM     = ..
+PATH_BIN       = ../../../../
+
+# This setting must be the same as used when building VBoxXPCOM.so.
+# If you get a lot of unresolved symbols, try commenting it out.
+VBOX_WITH_XPCOM_NAMESPACE_CLEANUP=1
+
+PATH_XPCOM_IDL = $(PATH_XPCOM)/idl
+INCS_XPCOM     = $(PATH_XPCOM)/include \
+                 $(PATH_XPCOM)/include/nsprpub \
+                 $(PATH_XPCOM)/include/string \
+                 $(PATH_XPCOM)/include/xpcom \
+                 $(PATH_XPCOM)/include/ipcd
+
+ifdef VBOX_WITH_XPCOM_NAMESPACE_CLEANUP
+ DEFS_XPCOM   += VBOX_WITH_XPCOM_NAMESPACE_CLEANUP
+endif
+
+
+#
+# Link with the public XPCOM libraries
+#
+tstVBoxAPILinux: tstVBoxAPILinux.o
+	g++ -g -o $@ $^ \
+		$(PATH_BIN)/VBoxXPCOM.so \
+		-Wl,-rpath $(PATH_BIN)/ \
+		-ldl -lpthread
+
+tstVBoxAPILinux.o: tstVBoxAPILinux.cpp
+	g++ -c -DRT_OS_LINUX -g -fshort-wchar $(addprefix -I, $(INCS_XPCOM)) $(addprefix -D, $(DEFS_XPCOM)) -o $@ tstVBoxAPILinux.cpp
+
+clean:
+	rm -f tstVBoxAPILinux tstVBoxAPILinux.o

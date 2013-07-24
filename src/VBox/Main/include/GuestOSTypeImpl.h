@@ -1,0 +1,111 @@
+/** @file
+ *
+ * VirtualBox COM class implementation
+ */
+
+/*
+ * Copyright (C) 2006-2012 Oracle Corporation
+ *
+ * This file is part of VirtualBox Open Source Edition (OSE), as
+ * available from http://www.virtualbox.org. This file is free software;
+ * you can redistribute it and/or modify it under the terms of the GNU
+ * General Public License (GPL) as published by the Free Software
+ * Foundation, in version 2 as it comes in the "COPYING" file of the
+ * VirtualBox OSE distribution. VirtualBox OSE is distributed in the
+ * hope that it will be useful, but WITHOUT ANY WARRANTY of any kind.
+ */
+
+#ifndef ____H_GUESTOSTYPEIMPL
+#define ____H_GUESTOSTYPEIMPL
+
+#include "VirtualBoxBase.h"
+#include "Global.h"
+
+#include <VBox/ostypes.h>
+
+class ATL_NO_VTABLE GuestOSType :
+    public VirtualBoxBase,
+    VBOX_SCRIPTABLE_IMPL(IGuestOSType)
+{
+public:
+    VIRTUALBOXBASE_ADD_ERRORINFO_SUPPORT(GuestOSType, IGuestOSType)
+
+    DECLARE_NOT_AGGREGATABLE(GuestOSType)
+
+    DECLARE_PROTECT_FINAL_CONSTRUCT()
+
+    BEGIN_COM_MAP(GuestOSType)
+        VBOX_DEFAULT_INTERFACE_ENTRIES(IGuestOSType)
+    END_COM_MAP()
+
+    DECLARE_EMPTY_CTOR_DTOR(GuestOSType)
+
+    HRESULT FinalConstruct();
+    void FinalRelease();
+
+    // public initializer/uninitializer for internal purposes only
+    HRESULT init(const Global::OSType &ostype);
+    void uninit();
+
+    // IGuestOSType properties
+    STDMETHOD(COMGETTER(FamilyId))(BSTR *aFamilyId);
+    STDMETHOD(COMGETTER(FamilyDescription))(BSTR *aFamilyDescription);
+    STDMETHOD(COMGETTER(Id))(BSTR *aId);
+    STDMETHOD(COMGETTER(Description))(BSTR *aDescription);
+    STDMETHOD(COMGETTER(Is64Bit))(BOOL *aIs64Bit);
+    STDMETHOD(COMGETTER(RecommendedIOAPIC))(BOOL *aRecommendedIOAPIC);
+    STDMETHOD(COMGETTER(RecommendedVirtEx))(BOOL *aRecommendedVirtEx);
+    STDMETHOD(COMGETTER(RecommendedRAM))(ULONG *aRAMSize);
+    STDMETHOD(COMGETTER(RecommendedVRAM))(ULONG *aVRAMSize);
+    STDMETHOD(COMGETTER(Recommended2DVideoAcceleration))(BOOL *aRecommended2DVideoAcceleration);
+    STDMETHOD(COMGETTER(Recommended3DAcceleration))(BOOL *aRecommended3DAcceleration);
+    STDMETHOD(COMGETTER(RecommendedHDD))(LONG64 *aHDDSize);
+    STDMETHOD(COMGETTER(AdapterType))(NetworkAdapterType_T *aNetworkAdapterType);
+    STDMETHOD(COMGETTER(RecommendedFirmware))(FirmwareType_T *aFirmwareType);
+    STDMETHOD(COMGETTER(RecommendedDVDStorageBus))(StorageBus_T *aStorageBusType);
+    STDMETHOD(COMGETTER(RecommendedDVDStorageController))(StorageControllerType_T *aStorageControllerType);
+    STDMETHOD(COMGETTER(RecommendedHDStorageBus))(StorageBus_T *aStorageBusType);
+    STDMETHOD(COMGETTER(RecommendedHDStorageController))(StorageControllerType_T *aStorageControllerType);
+    STDMETHOD(COMGETTER(RecommendedPAE))(BOOL *aRecommendedExtHw);
+    STDMETHOD(COMGETTER(RecommendedUSBHID))(BOOL *aRecommendedUSBHID);
+    STDMETHOD(COMGETTER(RecommendedHPET))(BOOL *aRecommendedHPET);
+    STDMETHOD(COMGETTER(RecommendedUSBTablet))(BOOL *aRecommendedUSBTablet);
+    STDMETHOD(COMGETTER(RecommendedRTCUseUTC))(BOOL *aRecommendedRTCUseUTC);
+    STDMETHOD(COMGETTER(RecommendedChipset))(ChipsetType_T *aChipsetType);
+    STDMETHOD(COMGETTER(RecommendedAudioController))(AudioControllerType_T *aAudioController);
+    STDMETHOD(COMGETTER(RecommendedFloppy))(BOOL *aRecommendedFloppy);
+    STDMETHOD(COMGETTER(RecommendedUSB))(BOOL *aRecommendedUSB);
+
+    // public methods only for internal purposes
+    const Bstr &id() const { return mID; }
+    bool is64Bit() const { return !!(mOSHint & VBOXOSHINT_64BIT); }
+    bool recommendedIOAPIC() const { return !!(mOSHint & VBOXOSHINT_IOAPIC); }
+    bool recommendedVirtEx() const { return !!(mOSHint & VBOXOSHINT_HWVIRTEX); }
+    bool recommendedEFI() const { return !!(mOSHint & VBOXOSHINT_EFI); }
+    NetworkAdapterType_T networkAdapterType() const { return mNetworkAdapterType; }
+    uint32_t numSerialEnabled() const { return mNumSerialEnabled; }
+
+private:
+
+    const Bstr mFamilyID;
+    const Bstr mFamilyDescription;
+    const Bstr mID;
+    const Bstr mDescription;
+    const VBOXOSTYPE mOSType;
+    const uint32_t mOSHint;
+    const uint32_t mRAMSize;
+    const uint32_t mVRAMSize;
+    const uint64_t mHDDSize;
+    const uint32_t mMonitorCount;
+    const NetworkAdapterType_T mNetworkAdapterType;
+    const uint32_t mNumSerialEnabled;
+    const StorageControllerType_T mDVDStorageControllerType;
+    const StorageBus_T mDVDStorageBusType;
+    const StorageControllerType_T mHDStorageControllerType;
+    const StorageBus_T mHDStorageBusType;
+    const ChipsetType_T mChipsetType;
+    const AudioControllerType_T mAudioControllerType;
+};
+
+#endif // ____H_GUESTOSTYPEIMPL
+/* vi: set tabstop=4 shiftwidth=4 expandtab: */

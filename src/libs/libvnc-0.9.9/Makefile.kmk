@@ -1,0 +1,72 @@
+SUB_DEPTH = ../../..
+include $(KBUILD_PATH)/subheader.kmk
+
+LIBRARIES += VBox-libvnc
+VBox-libvnc_TEMPLATE = VBOXR3
+VBox-libvnc_SDKS           = VBOX_ZLIB
+VBox-libvnc_DEFS.win = LIBVNCSERVER_HAVE_NO_LIBPTHREAD WIN32
+#VBox-libvnc_BLD_TYPE = release # WARNING! Always optimizing this lib.
+VBox-libvnc_INCS = . common libvncserver $(PATH_ROOT)/include $(SDK_VBOX_LIBPNG_INCS)
+
+
+#$(PATH_SUB_CURRENT)/libvncserver/main.c: rfbconfig
+#rfbconfig:
+
+VBox-libvnc_SOURCES = \
+	libvncserver/main.c \
+	libvncserver/auth.c \
+	libvncserver/font.c \
+	libvncserver/rfbregion.c \
+	libvncserver/rre.c \
+	libvncserver/tableinit24.c \
+	libvncserver/cargs.c \
+	libvncserver/hextile.c \
+	libvncserver/rfbserver.c \
+	libvncserver/scale.c \
+	libvncserver/translate.c \
+	libvncserver/zrleoutstream.c \
+	libvncserver/corre.c \
+	libvncserver/httpd.c \
+	libvncserver/ultra.c \
+	libvncserver/cursor.c \
+	libvncserver/selbox.c \
+	libvncserver/zrlepalettehelper.c \
+	libvncserver/cutpaste.c \
+	libvncserver/sockets.c \
+	libvncserver/zlib.c \
+	libvncserver/draw.c \
+	libvncserver/stats.c \
+	libvncserver/zrle.c  \
+	common/minilzo.c \
+	common/d3des.c \
+        common/vncauth.c
+
+VBox-libvnc_SOURCES.win = common/winapi.c
+
+# ifdef WITH_WEBSOCKETS
+ifdef HAVE_GNUTLS
+WEBSOCKETSSSLSRCS = \
+	libvncserver/rfbssl_gnutls.c \ 
+	libvncserver/rfbcrypto_gnutls.c
+else
+ifdef HAVE_LIBSSL
+WEBSOCKETSSSLSRCS = \
+	libvncserver/rfbcrypto_openssl.c \
+	libvncserver/rfbssl_openssl.c 
+else
+WEBSOCKETSSSLSRCS = \
+	libvncserver/rfbssl_none.c \
+	libvncserver/rfbcrypto_included.c \
+	common/md5.c \
+	common/sha1.c
+endif
+endif
+
+VBox-libvnc_SOURCES += \
+	libvncserver/websockets.c \
+	libvncserver/tight.c \
+	$(WEBSOCKETSSSLSRCS)
+VBox-libvnc_SOURCES.win += common/base64.c
+# endif
+
+include $(FILE_KBUILD_SUB_FOOTER)

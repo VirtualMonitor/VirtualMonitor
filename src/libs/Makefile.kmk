@@ -1,0 +1,36 @@
+# $Id: Makefile.kmk $
+## @file
+# Top-level makefile for the external libraries.
+#
+
+#
+# Copyright (C) 2006-2012 Oracle Corporation
+#
+# This file is part of VirtualBox Open Source Edition (OSE), as
+# available from http://www.virtualbox.org. This file is free software;
+# you can redistribute it and/or modify it under the terms of the GNU
+# General Public License (GPL) as published by the Free Software
+# Foundation, in version 2 as it comes in the "COPYING" file of the
+# VirtualBox OSE distribution. VirtualBox OSE is distributed in the
+# hope that it will be useful, but WITHOUT ANY WARRANTY of any kind.
+#
+
+SUB_DEPTH = ../..
+include $(KBUILD_PATH)/subheader.kmk
+
+#
+# Note! A number of the libs may be detected on the host system by the configure script.
+#       The usual way for testing for this is to see whether the Config.kmk default
+#       include path specific to the lib has been changed.
+#
+
+# Compression libs used by IPRT and <what was it again?>.
+include $(PATH_SUB_CURRENT)/liblzf-3.4/Makefile.kmk
+include $(PATH_SUB_CURRENT)/zlib-1.2.6/Makefile.kmk
+include $(PATH_SUB_CURRENT)/libpng-1.2.8/Makefile.kmk
+ifeq ($(KBUILD_TARGET),win)
+include $(PATH_SUB_CURRENT)/libvnc-0.9.9/Makefile.kmk
+endif
+
+include $(FILE_KBUILD_SUB_FOOTER)
+

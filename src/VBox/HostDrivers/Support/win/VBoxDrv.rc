@@ -1,0 +1,60 @@
+/* $Id: VBoxDrv.rc $ */
+/** @file
+ * VirtualBox Support Driver - Windows Resource File.
+ */
+
+/*
+ * Copyright (C) 2006-2010 Oracle Corporation
+ *
+ * This file is part of VirtualBox Open Source Edition (OSE), as
+ * available from http://www.virtualbox.org. This file is free software;
+ * you can redistribute it and/or modify it under the terms of the GNU
+ * General Public License (GPL) as published by the Free Software
+ * Foundation, in version 2 as it comes in the "COPYING" file of the
+ * VirtualBox OSE distribution. VirtualBox OSE is distributed in the
+ * hope that it will be useful, but WITHOUT ANY WARRANTY of any kind.
+ *
+ * The contents of this file may alternatively be used under the terms
+ * of the Common Development and Distribution License Version 1.0
+ * (CDDL) only, as it comes in the "COPYING.CDDL" file of the
+ * VirtualBox OSE distribution, in which case the provisions of the
+ * CDDL are applicable instead of those of the GPL.
+ *
+ * You may elect to license modified versions of this file under the
+ * terms and conditions of either the GPL or the CDDL or both.
+ */
+
+#include <Windows.h>
+#include <VBox/version.h>
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+
+VS_VERSION_INFO VERSIONINFO
+   FILEVERSION          VBOX_VERSION_MAJOR_NR,VBOX_VERSION_MINOR_NR,VBOX_VERSION_BUILD_NR,0
+   PRODUCTVERSION       VBOX_VERSION_MAJOR_NR,VBOX_VERSION_MINOR_NR,VBOX_VERSION_BUILD_NR,0
+   FILEFLAGSMASK        VS_FFI_FILEFLAGSMASK
+   FILEFLAGS            0x0L
+   FILEOS               VOS_NT_WINDOWS32
+   FILETYPE             VFT_DRV
+   FILESUBTYPE          VFT2_DRV_SYSTEM
+BEGIN
+   BLOCK "StringFileInfo"
+   BEGIN
+      BLOCK "040904b0"
+      BEGIN
+         VALUE "CompanyName",      VBOX_RC_COMPANY_NAME
+         VALUE "FileDescription",  "VirtualBox Support Driver\0"
+         VALUE "FileVersion",      VBOX_VERSION_MAJOR "." VBOX_VERSION_MINOR "." VBOX_VERSION_BUILD "." VBOX_SVN_REV "\0"
+         VALUE "InternalName",     "VBoxDrv.sys\0"
+         VALUE "LegalCopyright",   VBOX_RC_LEGAL_COPYRIGHT
+         VALUE "OriginalFilename", "VBoxDrv.sys\0"
+         VALUE "ProductName",      VBOX_PRODUCT "\0"
+         VALUE "ProductVersion",   VBOX_VERSION_MAJOR "." VBOX_VERSION_MINOR "." VBOX_VERSION_BUILD ".r" VBOX_SVN_REV "\0"
+      END
+   END
+   BLOCK "VarFileInfo"
+   BEGIN
+      VALUE "Translation", 0x409, 1200
+   END
+END
+

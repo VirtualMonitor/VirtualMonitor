@@ -1,0 +1,166 @@
+# $Id: Makefile.kmk $
+## @file
+# Sub-Makefile for the Cross Platform Guest Addition Services.
+#
+
+#
+# Copyright (C) 2007-2012 Oracle Corporation
+#
+# This file is part of VirtualBox Open Source Edition (OSE), as
+# available from http://www.virtualbox.org. This file is free software;
+# you can redistribute it and/or modify it under the terms of the GNU
+# General Public License (GPL) as published by the Free Software
+# Foundation, in version 2 as it comes in the "COPYING" file of the
+# VirtualBox OSE distribution. VirtualBox OSE is distributed in the
+# hope that it will be useful, but WITHOUT ANY WARRANTY of any kind.
+#
+
+SUB_DEPTH = ../../../../..
+include $(KBUILD_PATH)/subheader.kmk
+
+#
+# Incldue testcases.
+#
+include $(PATH_SUB_CURRENT)/testcase/Makefile.kmk
+
+#
+# Target lists.
+#
+PROGRAMS += VBoxService
+PROGRAMS.win.x86 += VBoxServiceNT
+
+#
+# VBoxService
+#
+VBoxService_TEMPLATE      = NewVBoxGuestR3Exe
+VBoxService_DEFS          = VBOX_WITH_HGCM VBOXSERVICE_TIMESYNC VBOXSERVICE_MANAGEMENT VBOXSERVICE_TOOLBOX
+VBoxService_DEFS         += \
+	VBOX_BUILD_TARGET=\"$(KBUILD_TARGET).$(KBUILD_TARGET_ARCH)\"
+VBoxService_DEFS.win     += _WIN32_WINNT=0x0501
+VBoxService_DEFS.os2      = VBOX_WITH_HGCM VBOXSERVICE_CLIPBOARD
+ifdef VBOX_WITH_DBUS
+ VBoxService_DEFS        += VBOX_WITH_DBUS
+endif
+ifdef VBOX_WITH_GUEST_PROPS
+ VBoxService_DEFS        += VBOX_WITH_GUEST_PROPS VBOXSERVICE_VMINFO
+endif
+ifdef VBOX_WITH_GUEST_CONTROL
+ VBoxService_DEFS        += VBOX_WITH_GUEST_CONTROL VBOXSERVICE_CONTROL
+endif
+ifdef VBOX_WITH_MEMBALLOON
+ VBoxService_DEFS        += VBOX_WITH_MEMBALLOON
+endif
+if1of ($(KBUILD_TARGET), win)
+ VBoxService_DEFS        += VBOX_WITH_PAGE_SHARING
+endif
+if1of ($(KBUILD_TARGET), linux)
+ VBoxService_DEFS        += VBOXSERVICE_CPUHOTPLUG
+endif
+ifdef VBOX_WITH_SHARED_FOLDERS
+ # darwin freebsd
+ if1of ($(KBUILD_TARGET), linux solaris)
+  VBoxService_DEFS       += VBOX_WITH_SHARED_FOLDERS
+ endif
+endif
+
+VBoxService_SOURCES       = \
+	VBoxService.cpp \
+	VBoxServiceTimeSync.cpp \
+	VBoxServiceUtils.cpp \
+	VBoxServiceStats.cpp \
+	VBoxServiceToolBox.cpp
+
+ifdef VBOX_WITH_GUEST_CONTROL
+ VBoxService_SOURCES    += \
+ 	VBoxServiceControl.cpp \
+	VBoxServiceControlThread.cpp
+endif
+
+ifdef VBOX_WITH_MEMBALLOON
+ VBoxService_SOURCES    += \
+ 	VBoxServiceBalloon.cpp
+endif
+if1of ($(KBUILD_TARGET), win)
+ VBoxService_SOURCES    += \
+ 	VBoxServicePageSharing.cpp
+endif
+
+ifdef VBOX_WITH_GUEST_PROPS
+ VBoxService_SOURCES.win  = \
+ 	VBoxServiceVMInfo-win.cpp
+ VBoxService_SOURCES     += \
+ 	VBoxServiceVMInfo.cpp \
+ 	VBoxServicePropCache.cpp
+endif
+
+if1of ($(KBUILD_TARGET), linux)
+ VBoxService_SOURCES     += \
+	VBoxServiceCpuHotPlug.cpp
+endif
+
+ifdef VBOX_WITH_SHARED_FOLDERS
+ if1of ($(KBUILD_TARGET), linux solaris)
+  VBoxService_SOURCES          += \
+	VBoxServiceAutoMount.cpp
+  VBoxService_SOURCES.linux    += \
+	../../linux/sharedfolders/vbsfmount.c
+ endif
+endif
+
+VBoxService_SOURCES.win  += \
+	VBoxService-win.rc \
+	VBoxService-win.cpp
+
+VBoxService_SOURCES.os2   = \
+	VBoxService-os2.def \
+	VBoxServiceClipboard-os2.cpp
+
+VBoxService_LIBS        += \
+	$(VBOX_LIB_IPRT_GUEST_R3) \
+	$(VBOX_LIB_VBGL_R3) \
+	$(VBOX_LIB_IPRT_GUEST_R3)       # (The joy of unix linkers.)
+if1of ($(KBUILD_TARGET), linux)
+ VBoxService_LIBS        += \
+	crypt
+endif
+ifdef VBOX_WITH_DBUS
+ if1of ($(KBUILD_TARGET), linux solaris) # FreeBSD?
+  VBoxService_LIBS       += \
+	dl
+ endif
+endif
+ifdef VBOX_WITH_GUEST_PROPS
+ VBoxService_LIBS.win    += \
+ 	Secur32.lib \
+ 	WtsApi32.lib \
+ 	Psapi.lib
+ VBoxService_LIBS.solaris += \
+ 	nsl \
+	kstat \
+	contract
+endif
+
+#
+# VBoxServiceNT - NT4 version of VBoxService.
+#
+VBoxServiceNT_TEMPLATE = NewVBoxGuestR3Exe
+VBoxServiceNT_EXTENDS  = VBoxService
+VBoxServiceNT_DEFS.win = _WIN32_WINNT=0x0400 TARGET_NT4 VBOXSERVICE_MANAGEMENT
+
+VBoxServiceVMInfo.cpp_DEFS = VBOX_SVN_REV=$(VBOX_SVN_REV)
+VBoxServiceVMInfo.cpp_DEPS = $(VBOX_SVN_REV_KMK)
+
+#
+# The icon is configurable.
+#
+VBoxService-win.rc_INCS = $(VBoxService_0_OUTDIR)
+VBoxService-win.rc_DEPS = $(VBoxService_0_OUTDIR)/VBoxService-win-icon.rc
+VBoxService-win.rc_CLEAN = $(VBoxService_0_OUTDIR)/VBoxService-win-icon.rc
+
+# Icon include file.
+$$(VBoxService_0_OUTDIR)/VBoxService-win-icon.rc: $(VBOX_WINDOWS_ADDITIONS_ICON_FILE) $$(VBoxService_DEFPATH)/Makefile.kmk | $$(dir $$@)
+	$(RM) -f $@
+	$(APPEND) $@ 'IDI_VIRTUALBOX ICON DISCARDABLE "$(subst /,\\,$(VBOX_WINDOWS_ADDITIONS_ICON_FILE))"'
+
+include $(FILE_KBUILD_SUB_FOOTER)
+

@@ -1,0 +1,42 @@
+# $Id: Makefile.kmk $
+## @file
+# Sub-Makefile for the Windows NT Additions Tools.
+#
+
+# Copyright (C) 2012 Oracle Corporation
+#
+# This file is part of VirtualBox Open Source Edition (OSE), as
+# available from http://www.virtualbox.org. This file is free software;
+# you can redistribute it and/or modify it under the terms of the GNU
+# General Public License (GPL) as published by the Free Software
+# Foundation, in version 2 as it comes in the "COPYING" file of the
+# VirtualBox OSE distribution. VirtualBox OSE is distributed in the
+# hope that it will be useful, but WITHOUT ANY WARRANTY of any kind.
+#
+
+SUB_DEPTH = ../../../../..
+include $(KBUILD_PATH)/subheader.kmk
+
+PROGRAMS += VBoxCertUtil
+
+VBoxCertUtil_TEMPLATE = NewVBoxGuestR3Exe
+VBoxCertUtil_SOURCES = \
+    VBoxCertUtil.cpp \
+    VBoxCertUtil.rc
+VBoxCertUtil_LIBS = \
+    crypt32.lib
+
+#
+# The icon is configurable.
+#
+VBoxCertUtil.rc_INCS = $(VBoxCertUtil_0_OUTDIR)
+VBoxCertUtil.rc_DEPS = $(VBoxCertUtil_0_OUTDIR)/VBoxCertUtil-win-icon.rc
+VBoxCertUtil.rc_CLEAN = $(VBoxCertUtil_0_OUTDIR)/VBoxCertUtil-win-icon.rc
+
+# Icon include file.
+$$(VBoxCertUtil_0_OUTDIR)/VBoxCertUtil-win-icon.rc: $(VBOX_WINDOWS_ADDITIONS_ICON_FILE) $$(VBoxCertUtil_DEFPATH)/Makefile.kmk | $$(dir $$@)
+	$(RM) -f $@
+	$(APPEND) $@ 'IDI_VIRTUALBOX ICON DISCARDABLE "$(subst /,\\,$(VBOX_WINDOWS_ADDITIONS_ICON_FILE))"'
+
+include $(FILE_KBUILD_SUB_FOOTER)
+

@@ -1,0 +1,94 @@
+#!/bin/sh
+
+#
+# Copyright (C) 2007-2010 Oracle Corporation
+#
+# This file is part of VirtualBox Open Source Edition (OSE), as
+# available from http://www.virtualbox.org. This file is free software;
+# you can redistribute it and/or modify it under the terms of the GNU
+# General Public License (GPL) as published by the Free Software
+# Foundation, in version 2 as it comes in the "COPYING" file of the
+# VirtualBox OSE distribution. VirtualBox OSE is distributed in the
+# hope that it will be useful, but WITHOUT ANY WARRANTY of any kind.
+#
+
+CP="/bin/cp -f"
+CPDIR="${CP} -R"
+
+#
+# Correct the ownership of the directories in case there
+# was an existing installation.
+#
+chown -R root:admin /Applications/VirtualBox.app
+
+#
+# Select the right architecture.
+#
+MY_ARCH=`uname -m`
+if test "$MY_ARCH" = "x86_64"; then
+  MY_ARCH="amd64"
+else
+  MY_ARCH="x86"
+fi
+set -e
+for trg in `ls /Applications/VirtualBox.app/Contents/MacOS/*-${MY_ARCH}`;
+do
+    linkname=`echo "$trg" | sed -e 's|-'"${MY_ARCH}"'$||' `
+    if test "$linkname" = "$trg"; then
+        echo "oops: $trg" 1>&2
+        exit 1;
+    fi
+    rm -f         "$linkname"
+    ln -vh "$trg" "$linkname"
+done
+
+#
+# Install the Python bindings
+#
+
+VBOX_INSTALL_PATH=/Applications/VirtualBox.app/Contents/MacOS
+PYTHON="python python2.3 python2.5 python2.6 python2.7"
+if [ -e "${VBOX_INSTALL_PATH}/sdk/installer/vboxapisetup.py" ]; then
+    for p in $PYTHON; do
+    	# Install the python bindings if python is in the path
+    	if [ "`\${p} -c 'print "test"' 2> /dev/null`" = "test" ]; then
+    		echo  1>&2 "Python found: ${p}, installing bindings..."
+    		# Pass install path via environment
+    		export VBOX_INSTALL_PATH
+    		/bin/sh -c "cd $VBOX_INSTALL_PATH/sdk/installer && ${p} vboxapisetup.py install"
+    	fi
+    done
+fi
+
+#
+# Install the vboxweb service file for launchd
+#
+VBOXWEBSRV="${VBOX_INSTALL_PATH}/org.virtualbox.vboxwebsrv.plist"
+VBOXWEBSRV_TRG="${HOME}/Library/LaunchAgents"
+if [[ -e "${VBOXWEBSRV}" && -e "${VBOXWEBSRV_TRG}" ]]; then
+    echo "Installing vboxwebsrv launchd file to ${VBOXWEBSRV_TRG}"
+    ${CP} "${VBOXWEBSRV}" "${VBOXWEBSRV_TRG}/"
+    [ "x" != "x${USER}" ] && /usr/sbin/chown "${USER}" "${VBOXWEBSRV_TRG}/org.virtualbox.vboxwebsrv.plist"
+fi
+
+#
+# Install any custom files
+#
+DATAPATH="`/usr/bin/dirname "${0}"`/../../../../../.."
+if [ -d "${DATAPATH}/.custom" ]; then
+    echo  1>&2 "Copy ${DATAPATH}/.custom to ${VBOX_INSTALL_PATH}...";
+    ${CPDIR} "${DATAPATH}/.custom/"   "${VBOX_INSTALL_PATH}/custom"
+fi
+
+#
+# Register our file extensions
+#
+LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister
+if [[ -e "${LSREGISTER}" && "x" != "x${USER}" ]]; then
+    echo "Register file extensions for \"${USER}\""
+    /usr/bin/sudo -u "${USER}" ${LSREGISTER} -f /Applications/VirtualBox.app
+    /usr/bin/sudo -u "${USER}" ${LSREGISTER} -f /Applications/VirtualBox.app/Contents/Resources/vmstarter.app
+fi
+
+exit 0;
+

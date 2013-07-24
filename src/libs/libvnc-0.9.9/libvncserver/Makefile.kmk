@@ -1,0 +1,9 @@
+DEPTH ?= ..
+SUB_DEPTH = ..
+include $(PATH_KBUILD)/subheader.kmk
+
+LIBRARIES += kCpuStatic
+kCpuStatic_TEMPLATE = VBOXR3
+
+include $(PATH_KBUILD)/subfooter.kmk
+

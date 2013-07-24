@@ -1,0 +1,155 @@
+# $Id: Makefile.kmk $
+## @file
+# Sub-Makefile for the Network Adapter Driver (VBoxNetAdp).
+#
+
+#
+# Copyright (C) 2009-2012 Oracle Corporation
+#
+# This file is part of VirtualBox Open Source Edition (OSE), as
+# available from http://www.virtualbox.org. This file is free software;
+# you can redistribute it and/or modify it under the terms of the GNU
+# General Public License (GPL) as published by the Free Software
+# Foundation, in version 2 as it comes in the "COPYING" file of the
+# VirtualBox OSE distribution. VirtualBox OSE is distributed in the
+# hope that it will be useful, but WITHOUT ANY WARRANTY of any kind.
+#
+
+SUB_DEPTH = ../../../..
+include $(KBUILD_PATH)/subheader.kmk
+
+if1of ($(KBUILD_TARGET), solaris darwin linux freebsd)
+ #
+ # VBoxNetAdp - Virtual Network Adapter
+ # Note! On Solaris the name has to be <= 8 chars long.
+ #
+ ifdef VBOX_WITH_VBOXDRV
+  SYSMODS += VBoxNetAdp
+  VBoxNetAdp_TEMPLATE         = VBOXR0DRV
+  VBoxNetAdp_INST             = $(INST_VBOXNETADP)$(if $(eq $(KBUILD_TARGET),darwin),Contents/MacOS/)
+  VBoxNetAdp_DEBUG_INST.darwin= $(patsubst %/,%,$(INST_VBOXNETADP))
+  VBoxNetAdp_NAME.solaris     = vboxnet
+  VBoxNetAdp_NAME.linux       = vboxnetadp
+  VBoxNetAdp_NAME.freebsd     = vboxnetadp
+  VBoxNetAdp_DEPS.solaris    += $(VBOX_SVN_REV_KMK)
+  VBoxNetAdp_DEFS             = IN_RT_R0 VBOX_SVN_REV=$(VBOX_SVN_REV) IN_SUP_STATIC
+  VBoxNetAdp_DEFS.linux       = KBUILD_MODNAME=KBUILD_STR\(vboxnetadp\) KBUILD_BASENAME=KBUILD_STR\(vboxnetadp\) MODULE
+  #VBoxNetAdp_LDFLAGS.darwin   = -v -Wl,-whyload -Wl,-v -Wl,-whatsloaded
+  VBoxNetAdp_LDFLAGS.solaris += -N misc/gld -N drv/vboxdrv
+  VBoxNetAdp_INCS.linux   := \
+  	$(PATH_ROOT)/src/VBox/Runtime/r0drv/linux
+  VBoxNetAdp_INCS             = \
+  	.
+  VBoxNetAdp_SOURCES.darwin   = \
+  	darwin/VBoxNetAdp-darwin.cpp \
+  	VBoxNetAdp.c
+  VBoxNetAdp_SOURCES.solaris  = \
+  	solaris/VBoxNetAdp-solaris.c
+  VBoxNetAdp_SOURCES.linux   = \
+  	linux/VBoxNetAdp-linux.c \
+  	VBoxNetAdp.c
+  VBoxNetAdp_SOURCES.freebsd   = \
+  	freebsd/VBoxNetAdp-freebsd.c \
+  	VBoxNetAdp.c
+  VBoxNetAdp_SOURCES          =
+  #VBoxNetAdp_SOURCES          = \
+  #	VBoxNetAdp.c
+  VBoxNetAdp_LIBS            += \
+  	$(PATH_STAGE_LIB)/SUPR0IdcClient$(VBOX_SUFF_LIB)
+ endif
+endif
+
+#
+# Darwin extras.
+#
+ifeq ($(KBUILD_TARGET),darwin)
+ INSTALLS += VBoxNetAdp.kext
+ VBoxNetAdp.kext_INST     = $(INST_VBOXNETADP)Contents/
+ VBoxNetAdp.kext_SOURCES  = \
+ 	$(VBoxNetAdp.kext_0_OUTDIR)/Info.plist
+ VBoxNetAdp.kext_CLEAN    = \
+ 	$(VBoxNetAdp.kext_0_OUTDIR)/Info.plist
+
+$$(VBoxNetAdp.kext_0_OUTDIR)/Info.plist: $(PATH_SUB_CURRENT)/darwin/Info.plist $(VBOX_VERSION_MK) | $$(dir $$@)
+	$(call MSG_GENERATE,VBoxNetAdp,$@,$<)
+	$(QUIET)$(RM) -f $@
+	$(QUIET)$(SED) \
+		-e 's/@VBOX_VERSION_STRING@/$(VBOX_VERSION_STRING)/g' \
+		-e 's/@VBOX_VERSION_MAJOR@/$(VBOX_VERSION_MAJOR)/g' \
+		-e 's/@VBOX_VERSION_MINOR@/$(VBOX_VERSION_MINOR)/g' \
+		-e 's/@VBOX_VERSION_BUILD@/$(VBOX_VERSION_BUILD)/g' \
+		-e 's/@VBOX_VENDOR@/$(VBOX_VENDOR)/g' \
+		-e 's/@VBOX_PRODUCT@/$(VBOX_PRODUCT)/g' \
+		-e 's/@VBOX_C_YEAR@/$(VBOX_C_YEAR)/g' \
+		--output $@ \
+		$<
+
+ INSTALLS.darwin += Scripts-darwin-adp
+ Scripts-darwin-adp_INST = $(INST_DIST)
+ Scripts-darwin-adp_EXEC_SOURCES = \
+ 	darwin/loadnetadp.sh
+endif # darwin
+
+ifeq ($(KBUILD_TARGET),linux)
+ #
+ # Install source files for compilation on Linux.
+ # files_vboxnetadp defines VBOX_VBOXNETADP_SOURCES.
+ #
+ INSTALLS += VBoxNetAdp-src
+ include $(PATH_SUB_CURRENT)/linux/files_vboxnetadp
+ VBoxNetAdp-src_INST    = bin/src/vboxnetadp/
+ VBoxNetAdp-src_SOURCES = \
+	$(subst $(DQUOTE),,$(VBOX_VBOXNETADP_SOURCES)) \
+	$(VBoxNetAdp-src_0_OUTDIR)/Makefile
+ VBoxNetAdp-src_EXEC_SOURCES = \
+	$(PATH_ROOT)/src/VBox/HostDrivers/linux/do_Module.symvers
+ VBoxNetAdp-src_CLEAN = \
+	$(VBoxNetAdp-src_0_OUTDIR)/Makefile \
+	$(PATH_TARGET)/VBoxNetAdp-src-1.dep \
+
+ # Scripts needed for building the kernel modules
+ includedep $(PATH_TARGET)/VBoxNetAdp-src-1.dep
+$$(VBoxNetAdp-src_0_OUTDIR)/Makefile: \
+		$(PATH_SUB_CURRENT)/linux/Makefile \
+		$$(if $$(eq $$(VBoxNetAdp/linux/Makefile_VBOX_HARDENED),$$(VBOX_WITH_HARDENING)),,FORCE) \
+		| $$(dir $$@)
+	$(QUIET)$(RM) -f -- $@
+ ifndef VBOX_WITH_HARDENING
+	$(QUIET)$(SED) -e "s;-DVBOX_WITH_HARDENING;;g" --output $@ $<
+ else
+	$(QUIET)$(CP) -f $< $@
+ endif
+	%$(QUIET2)$(APPEND) -t '$(PATH_TARGET)/VBoxNetAdp-src-1.dep' 'VBoxNetAdp/linux/Makefile_VBOX_HARDENED=$(VBOX_WITH_HARDENING)'
+
+
+endif # linux
+
+ifeq ($(KBUILD_TARGET),freebsd)
+ #
+ # Install source files for compilation on FreeBSD.
+ # files_vboxnetadp defines VBOX_VBOXNETADP_SOURCES.
+ #
+ INSTALLS += VBoxNetAdp-src
+ include $(PATH_SUB_CURRENT)/freebsd/files_vboxnetadp
+ VBoxNetAdp-src_INST = bin/src/vboxnetadp/
+ VBoxNetAdp-src_SOURCES = \
+	$(subst $(DQUOTE),,$(VBOX_VBOXNETADP_SOURCES)) \
+	$(VBoxNetAdp-src_0_OUTDIR)/Makefile
+ VBoxNetAdp-src_CLEAN = \
+	$(VBoxNetAdp-src_0_OUTDIR)/Makefile	\
+
+$$(VBoxNetAdp-src_0_OUTDIR)/Makefile: \
+		$(PATH_SUB_CURRENT)/freebsd/Makefile \
+		$$(if $$(eq $$(VBoxNetAdp/freebsd/Makefile_VBOX_HARDENED),$$(VBOX_WITH_HARDENING)),,FORCE) \
+		| $$(dir $$@)
+	$(QUIET)$(RM) -f -- $@
+ ifndef VBOX_WITH_HARDENING
+	$(QUIET)$(SED) -e "s;-DVBOX_WITH_HARDENING;;g" --output $@ $<
+ else
+	$(QUIET)$(CP) -f $< $@
+ endif
+
+endif # freebsd
+
+include $(FILE_KBUILD_SUB_FOOTER)
+

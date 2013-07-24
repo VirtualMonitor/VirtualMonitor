@@ -1,0 +1,557 @@
+/** @file
+ * VirtualBox - Logging.
+ */
+
+/*
+ * Copyright (C) 2006-2012 Oracle Corporation
+ *
+ * This file is part of VirtualBox Open Source Edition (OSE), as
+ * available from http://www.virtualbox.org. This file is free software;
+ * you can redistribute it and/or modify it under the terms of the GNU
+ * General Public License (GPL) as published by the Free Software
+ * Foundation, in version 2 as it comes in the "COPYING" file of the
+ * VirtualBox OSE distribution. VirtualBox OSE is distributed in the
+ * hope that it will be useful, but WITHOUT ANY WARRANTY of any kind.
+ *
+ * The contents of this file may alternatively be used under the terms
+ * of the Common Development and Distribution License Version 1.0
+ * (CDDL) only, as it comes in the "COPYING.CDDL" file of the
+ * VirtualBox OSE distribution, in which case the provisions of the
+ * CDDL are applicable instead of those of the GPL.
+ *
+ * You may elect to license modified versions of this file under the
+ * terms and conditions of either the GPL or the CDDL or both.
+ */
+
+#ifndef ___VBox_log_h
+#define ___VBox_log_h
+
+/*
+ * Set the default loggroup.
+ */
+#ifndef LOG_GROUP
+# define LOG_GROUP LOG_GROUP_DEFAULT
+#endif
+
+#include <iprt/log.h>
+
+
+/** @defgroup grp_rt_vbox_log    VirtualBox Logging
+ * @ingroup grp_rt_vbox
+ * @{
+ */
+
+/** PC port for debug output */
+#define RTLOG_DEBUG_PORT 0x504
+
+/**
+ * VirtualBox Logging Groups.
+ * (Remember to update LOGGROUP_NAMES!)
+ *
+ * @remark It should be pretty obvious, but just to have
+ *         mentioned it, the values are sorted alphabetically (using the
+ *         english alphabet) except for _DEFAULT which is always first.
+ *
+ *         If anyone might be wondering what the alphabet looks like:
+ *              A B C D E F G H I J K L M N O P Q R S T U V W X Y Z _
+ */
+typedef enum LOGGROUP
+{
+    /** The default VBox group. */
+    LOG_GROUP_DEFAULT = RTLOGGROUP_FIRST_USER,
+    /** Auto-logon group. */
+    LOG_GROUP_AUTOLOGON,
+    /** CFGM group. */
+    LOG_GROUP_CFGM,
+    /** CPUM group. */
+    LOG_GROUP_CPUM,
+    /** CSAM group. */
+    LOG_GROUP_CSAM,
+    /** Debug Console group. */
+    LOG_GROUP_DBGC,
+    /** DBGF group. */
+    LOG_GROUP_DBGF,
+    /** DBGF info group. */
+    LOG_GROUP_DBGF_INFO,
+    /** The debugger gui. */
+    LOG_GROUP_DBGG,
+    /** Generic Device group. */
+    LOG_GROUP_DEV,
+    /** ACPI Device group. */
+    LOG_GROUP_DEV_ACPI,
+    /** AHCI Device group. */
+    LOG_GROUP_DEV_AHCI,
+    /** APIC Device group. */
+    LOG_GROUP_DEV_APIC,
+    /** Audio Device group. */
+    LOG_GROUP_DEV_AUDIO,
+    /** BusLogic SCSI host adapter group. */
+    LOG_GROUP_DEV_BUSLOGIC,
+    /** DMA Controller group. */
+    LOG_GROUP_DEV_DMA,
+    /** Gigabit Ethernet Device group. */
+    LOG_GROUP_DEV_E1000,
+    /** Extensible Firmware Interface Device group. */
+    LOG_GROUP_DEV_EFI,
+    /** Floppy Controller Device group. */
+    LOG_GROUP_DEV_FDC,
+    /** High Precision Event Timer Device group. */
+    LOG_GROUP_DEV_HPET,
+    /** IDE Device group. */
+    LOG_GROUP_DEV_IDE,
+    /** The internal networking IP stack Device group. */
+    LOG_GROUP_DEV_INIP,
+    /** KeyBoard Controller Device group. */
+    LOG_GROUP_DEV_KBD,
+    /** Low Pin Count Device group. */
+    LOG_GROUP_DEV_LPC,
+    /** LsiLogic SCSI controller Device group. */
+    LOG_GROUP_DEV_LSILOGICSCSI,
+    /** NE2000 Device group. */
+    LOG_GROUP_DEV_NE2000,
+    /** Parallel Device group */
+    LOG_GROUP_DEV_PARALLEL,
+    /** PC Device group. */
+    LOG_GROUP_DEV_PC,
+    /** PC Architecture Device group. */
+    LOG_GROUP_DEV_PC_ARCH,
+    /** PC BIOS Device group. */
+    LOG_GROUP_DEV_PC_BIOS,
+    /** PCI Device group. */
+    LOG_GROUP_DEV_PCI,
+    /** PCI Raw Device group. */
+    LOG_GROUP_DEV_PCI_RAW,
+    /** PCNet Device group. */
+    LOG_GROUP_DEV_PCNET,
+    /** PIC Device group. */
+    LOG_GROUP_DEV_PIC,
+    /** PIT Device group. */
+    LOG_GROUP_DEV_PIT,
+    /** RTC Device group. */
+    LOG_GROUP_DEV_RTC,
+    /** Serial Device group */
+    LOG_GROUP_DEV_SERIAL,
+    /** System Management Controller Device group. */
+    LOG_GROUP_DEV_SMC,
+    /** USB Device group. */
+    LOG_GROUP_DEV_USB,
+    /** VGA Device group. */
+    LOG_GROUP_DEV_VGA,
+    /** Virtio PCI Device group. */
+    LOG_GROUP_DEV_VIRTIO,
+    /** Virtio Network Device group. */
+    LOG_GROUP_DEV_VIRTIO_NET,
+    /** VMM Device group. */
+    LOG_GROUP_DEV_VMM,
+    /** VMM Device group for backdoor logging. */
+    LOG_GROUP_DEV_VMM_BACKDOOR,
+    /** VMM Device group for logging guest backdoor logging to stderr. */
+    LOG_GROUP_DEV_VMM_STDERR,
+    /** Disassembler group. */
+    LOG_GROUP_DIS,
+    /** Generic driver group. */
+    LOG_GROUP_DRV,
+    /** ACPI driver group */
+    LOG_GROUP_DRV_ACPI,
+    /** Block driver group. */
+    LOG_GROUP_DRV_BLOCK,
+    /** Char driver group. */
+    LOG_GROUP_DRV_CHAR,
+    /** Disk integrity driver group. */
+    LOG_GROUP_DRV_DISK_INTEGRITY,
+    /** Video Display driver group. */
+    LOG_GROUP_DRV_DISPLAY,
+    /** Floppy media driver group. */
+    LOG_GROUP_DRV_FLOPPY,
+    /** Host Base block driver group. */
+    LOG_GROUP_DRV_HOST_BASE,
+    /** Host DVD block driver group. */
+    LOG_GROUP_DRV_HOST_DVD,
+    /** Host floppy block driver group. */
+    LOG_GROUP_DRV_HOST_FLOPPY,
+    /** Host Parallel Driver group */
+    LOG_GROUP_DRV_HOST_PARALLEL,
+    /** Host Serial Driver Group */
+    LOG_GROUP_DRV_HOST_SERIAL,
+    /** The internal networking transport driver group. */
+    LOG_GROUP_DRV_INTNET,
+    /** ISO (CD/DVD) media driver group. */
+    LOG_GROUP_DRV_ISO,
+    /** Keyboard Queue driver group. */
+    LOG_GROUP_DRV_KBD_QUEUE,
+    /** lwIP IP stack driver group. */
+    LOG_GROUP_DRV_LWIP,
+    /** Video Miniport driver group. */
+    LOG_GROUP_DRV_MINIPORT,
+    /** Mouse driver group. */
+    LOG_GROUP_DRV_MOUSE,
+    /** Mouse Queue driver group. */
+    LOG_GROUP_DRV_MOUSE_QUEUE,
+    /** Named Pipe stream driver group. */
+    LOG_GROUP_DRV_NAMEDPIPE,
+    /** NAT network transport driver group */
+    LOG_GROUP_DRV_NAT,
+    /** Raw image driver group */
+    LOG_GROUP_DRV_RAW_IMAGE,
+    /** SCSI driver group. */
+    LOG_GROUP_DRV_SCSI,
+    /** Host SCSI driver group. */
+    LOG_GROUP_DRV_SCSIHOST,
+    /** Async transport driver group */
+    LOG_GROUP_DRV_TRANSPORT_ASYNC,
+    /** TUN network transport driver group */
+    LOG_GROUP_DRV_TUN,
+    /** UDP tunnet network transport driver group. */
+    LOG_GROUP_DRV_UDPTUNNEL,
+    /** USB Proxy driver group. */
+    LOG_GROUP_DRV_USBPROXY,
+    /** VBoxHDD media driver group. */
+    LOG_GROUP_DRV_VBOXHDD,
+    /** VBox HDD container media driver group. */
+    LOG_GROUP_DRV_VD,
+    /** Virtual Switch transport driver group */
+    LOG_GROUP_DRV_VSWITCH,
+    /** VUSB driver group */
+    LOG_GROUP_DRV_VUSB,
+    /** EM group. */
+    LOG_GROUP_EM,
+    /** FTM group. */
+    LOG_GROUP_FTM,
+    /** GMM group. */
+    LOG_GROUP_GMM,
+    /** Guest control. */
+    LOG_GROUP_GUEST_CONTROL,
+    /** GUI group. */
+    LOG_GROUP_GUI,
+    /** GVMM group. */
+    LOG_GROUP_GVMM,
+    /** HGCM group */
+    LOG_GROUP_HGCM,
+    /** HGSMI group */
+    LOG_GROUP_HGSMI,
+    /** HWACCM group. */
+    LOG_GROUP_HWACCM,
+    /** IEM group. */
+    LOG_GROUP_IEM,
+    /** IOM group. */
+    LOG_GROUP_IOM,
+    /** XPCOM IPC group. */
+    LOG_GROUP_IPC,
+    /** Main group. */
+    LOG_GROUP_MAIN,
+    /** Misc. group intended for external use only. */
+    LOG_GROUP_MISC,
+    /** MM group. */
+    LOG_GROUP_MM,
+    /** MM group. */
+    LOG_GROUP_MM_HEAP,
+    /** MM group. */
+    LOG_GROUP_MM_HYPER,
+    /** MM Hypervisor Heap group. */
+    LOG_GROUP_MM_HYPER_HEAP,
+    /** MM Physical/Ram group. */
+    LOG_GROUP_MM_PHYS,
+    /** MM Page pool group. */
+    LOG_GROUP_MM_POOL,
+    /** The NAT service group */
+    LOG_GROUP_NAT_SERVICE,
+    /** The network adaptor driver group. */
+    LOG_GROUP_NET_ADP_DRV,
+    /** The network filter driver group. */
+    LOG_GROUP_NET_FLT_DRV,
+    /** The common network service group */
+    LOG_GROUP_NET_SERVICE,
+    /** Network traffic shaper driver group. */
+    LOG_GROUP_NET_SHAPER,
+    /** PATM group. */
+    LOG_GROUP_PATM,
+    /** PDM group. */
+    LOG_GROUP_PDM,
+    /** PDM Async completion group. */
+    LOG_GROUP_PDM_ASYNC_COMPLETION,
+    /** PDM Block cache group. */
+    LOG_GROUP_PDM_BLK_CACHE,
+    /** PDM Device group. */
+    LOG_GROUP_PDM_DEVICE,
+    /** PDM Driver group. */
+    LOG_GROUP_PDM_DRIVER,
+    /** PDM Loader group. */
+    LOG_GROUP_PDM_LDR,
+    /** PDM Loader group. */
+    LOG_GROUP_PDM_QUEUE,
+    /** PGM group. */
+    LOG_GROUP_PGM,
+    /** PGM dynamic mapping group. */
+    LOG_GROUP_PGM_DYNMAP,
+    /** PGM physical group. */
+    LOG_GROUP_PGM_PHYS,
+    /** PGM physical access group. */
+    LOG_GROUP_PGM_PHYS_ACCESS,
+    /** PGM shadow page pool group. */
+    LOG_GROUP_PGM_POOL,
+    /** PGM shared paging group. */
+    LOG_GROUP_PGM_SHARED,
+    /** REM group. */
+    LOG_GROUP_REM,
+    /** REM disassembly handler group. */
+    LOG_GROUP_REM_DISAS,
+    /** REM access handler group. */
+    LOG_GROUP_REM_HANDLER,
+    /** REM I/O port access group. */
+    LOG_GROUP_REM_IOPORT,
+    /** REM MMIO access group. */
+    LOG_GROUP_REM_MMIO,
+    /** REM Printf. */
+    LOG_GROUP_REM_PRINTF,
+    /** REM running group. */
+    LOG_GROUP_REM_RUN,
+    /** SELM group. */
+    LOG_GROUP_SELM,
+    /** Shared clipboard host service group. */
+    LOG_GROUP_SHARED_CLIPBOARD,
+    /** Chromium OpenGL host service group. */
+    LOG_GROUP_SHARED_CROPENGL,
+    /** Shared folders host service group. */
+    LOG_GROUP_SHARED_FOLDERS,
+    /** OpenGL host service group. */
+    LOG_GROUP_SHARED_OPENGL,
+    /** The internal networking service group. */
+    LOG_GROUP_SRV_INTNET,
+    /** SSM group. */
+    LOG_GROUP_SSM,
+    /** STAM group. */
+    LOG_GROUP_STAM,
+    /** SUP group. */
+    LOG_GROUP_SUP,
+    /** SUPport driver group. */
+    LOG_GROUP_SUP_DRV,
+    /** TM group. */
+    LOG_GROUP_TM,
+    /** TRPM group. */
+    LOG_GROUP_TRPM,
+    /** USB cardreader group. */
+    LOG_GROUP_USB_CARDREADER,
+    /** USB driver group. */
+    LOG_GROUP_USB_DRV,
+    /** USBFilter group. */
+    LOG_GROUP_USB_FILTER,
+    /** USB keyboard device group. */
+    LOG_GROUP_USB_KBD,
+    /** MSD USB device group. */
+    LOG_GROUP_USB_MSD,
+    /** USB webcam. */
+    LOG_GROUP_USB_WEBCAM,
+    /** Generic virtual disk layer. */
+    LOG_GROUP_VD,
+    /** DMG virtual disk backend. */
+    LOG_GROUP_VD_DMG,
+    /** iSCSI virtual disk backend. */
+    LOG_GROUP_VD_ISCSI,
+    /** Parallels HDD virtual disk backend. */
+    LOG_GROUP_VD_PARALLELS,
+    /** QCOW virtual disk backend. */
+    LOG_GROUP_VD_QCOW,
+    /** QED virtual disk backend. */
+    LOG_GROUP_VD_QED,
+    /** Raw virtual disk backend. */
+    LOG_GROUP_VD_RAW,
+    /** VDI virtual disk backend. */
+    LOG_GROUP_VD_VDI,
+    /** VHD virtual disk backend. */
+    LOG_GROUP_VD_VHD,
+    /** VMDK virtual disk backend. */
+    LOG_GROUP_VD_VMDK,
+    /** VM group. */
+    LOG_GROUP_VM,
+    /** VMM group. */
+    LOG_GROUP_VMM,
+    /** VRDE group */
+    LOG_GROUP_VRDE,
+    /** VRDP group */
+    LOG_GROUP_VRDP,
+    /** VSCSI group */
+    LOG_GROUP_VSCSI,
+    /** Webservice group. */
+    LOG_GROUP_WEBSERVICE
+    /* !!!ALPHABETICALLY!!! */
+} VBOX_LOGGROUP;
+
+
+/** @def VBOX_LOGGROUP_NAMES
+ * VirtualBox Logging group names.
+ *
+ * Must correspond 100% to LOGGROUP!
+ * Don't forget commas!
+ *
+ * @remark It should be pretty obvious, but just to have
+ *         mentioned it, the values are sorted alphabetically (using the
+ *         english alphabet) except for _DEFAULT which is always first.
+ *
+ *         If anyone might be wondering what the alphabet looks like:
+ *              a b c d e f g h i j k l m n o p q r s t u v w x y z
+ */
+#define VBOX_LOGGROUP_NAMES \
+{                   \
+    RT_LOGGROUP_NAMES, \
+    "DEFAULT",      \
+    "AUTOLOGON",    \
+    "CFGM",         \
+    "CPUM",         \
+    "CSAM",         \
+    "DBGC",         \
+    "DBGF",         \
+    "DBGF_INFO",    \
+    "DBGG",         \
+    "DEV",          \
+    "DEV_ACPI",     \
+    "DEV_AHCI",     \
+    "DEV_APIC",     \
+    "DEV_AUDIO",    \
+    "DEV_BUSLOGIC", \
+    "DEV_DMA",      \
+    "DEV_E1000",    \
+    "DEV_EFI",      \
+    "DEV_FDC",      \
+    "DEV_HPET",     \
+    "DEV_IDE",      \
+    "DEV_INIP",     \
+    "DEV_KBD",      \
+    "DEV_LPC",      \
+    "DEV_LSILOGICSCSI", \
+    "DEV_NE2000",   \
+    "DEV_PARALLEL", \
+    "DEV_PC",       \
+    "DEV_PC_ARCH",  \
+    "DEV_PC_BIOS",  \
+    "DEV_PCI",      \
+    "DEV_PCI_RAW",  \
+    "DEV_PCNET",    \
+    "DEV_PIC",      \
+    "DEV_PIT",      \
+    "DEV_RTC",      \
+    "DEV_SERIAL",   \
+    "DEV_SMC",      \
+    "DEV_USB",      \
+    "DEV_VGA",      \
+    "DEV_VIRTIO",   \
+    "DEV_VIRTIO_NET", \
+    "DEV_VMM",      \
+    "DEV_VMM_BACKDOOR", \
+    "DEV_VMM_STDERR",\
+    "DIS",          \
+    "DRV",          \
+    "DRV_ACPI",     \
+    "DRV_BLOCK",    \
+    "DRV_CHAR",     \
+    "DRV_DISK_INTEGRITY", \
+    "DRV_DISPLAY",  \
+    "DRV_FLOPPY",   \
+    "DRV_HOST_BASE", \
+    "DRV_HOST_DVD", \
+    "DRV_HOST_FLOPPY", \
+    "DRV_HOST_PARALLEL", \
+    "DRV_HOST_SERIAL", \
+    "DRV_INTNET",   \
+    "DRV_ISO",      \
+    "DRV_KBD_QUEUE", \
+    "DRV_LWIP",     \
+    "DRV_MINIPORT", \
+    "DRV_MOUSE", \
+    "DRV_MOUSE_QUEUE", \
+    "DRV_NAMEDPIPE", \
+    "DRV_NAT",      \
+    "DRV_RAW_IMAGE", \
+    "DRV_SCSI", \
+    "DRV_SCSIHOST", \
+    "DRV_TRANSPORT_ASYNC", \
+    "DRV_TUN",      \
+    "DRV_UDPTUNNEL", \
+    "DRV_USBPROXY", \
+    "DRV_VBOXHDD",  \
+    "DRV_VD",       \
+    "DRV_VSWITCH",  \
+    "DRV_VUSB",     \
+    "EM",           \
+    "FTM",          \
+    "GMM",          \
+    "GUEST_CONTROL", \
+    "GUI",          \
+    "GVMM",         \
+    "HGCM",         \
+    "HGSMI",        \
+    "HWACCM",       \
+    "IEM",          \
+    "IOM",          \
+    "IPC",          \
+    "MAIN",         \
+    "MISC",         \
+    "MM",           \
+    "MM_HEAP",      \
+    "MM_HYPER",     \
+    "MM_HYPER_HEAP",\
+    "MM_PHYS",      \
+    "MM_POOL",      \
+    "NAT_SERVICE",  \
+    "NET_ADP_DRV",  \
+    "NET_FLT_DRV",  \
+    "NET_SERVICE",  \
+    "NET_SHAPER",   \
+    "PATM",         \
+    "PDM",          \
+    "PDM_ASYNC_COMPLETION", \
+    "PDM_BLK_CACHE", \
+    "PDM_DEVICE",   \
+    "PDM_DRIVER",   \
+    "PDM_LDR",      \
+    "PDM_QUEUE",    \
+    "PGM",          \
+    "PGM_DYNMAP",   \
+    "PGM_PHYS",     \
+    "PGM_PHYS_ACCESS",\
+    "PGM_POOL",     \
+    "PGM_SHARED",   \
+    "REM",          \
+    "REM_DISAS",    \
+    "REM_HANDLER",  \
+    "REM_IOPORT",   \
+    "REM_MMIO",     \
+    "REM_PRINTF",   \
+    "REM_RUN",      \
+    "SELM",         \
+    "SHARED_CLIPBOARD",\
+    "SHARED_CROPENGL",\
+    "SHARED_FOLDERS",\
+    "SHARED_OPENGL",\
+    "SRV_INTNET",   \
+    "SSM",          \
+    "STAM",         \
+    "SUP",          \
+    "SUP_DRV",      \
+    "TM",           \
+    "TRPM",         \
+    "USB_CARDREADER",\
+    "USB_DRV",      \
+    "USB_FILTER",   \
+    "USB_KBD",      \
+    "USB_MSD",      \
+    "USB_WEBCAM",   \
+    "VD",           \
+    "VD_DMG",       \
+    "VD_ISCSI",     \
+    "VD_PARALLELS", \
+    "VD_QCOW",      \
+    "VD_QED",       \
+    "VD_RAW",       \
+    "VD_VDI",       \
+    "VD_VHD",       \
+    "VD_VMDK",      \
+    "VM",           \
+    "VMM",          \
+    "VRDE",         \
+    "VRDP",         \
+    "VSCSI",        \
+    "WEBSERVICE",   \
+}
+
+/** @} */
+#endif

@@ -1,0 +1,134 @@
+# $Id: Makefile.kmk $
+## @file
+# Sub-Makefile for the New BIOS ROM.
+#
+
+#
+# Copyright (C) 2012 Oracle Corporation
+#
+# This file is part of VirtualBox Open Source Edition (OSE), as
+# available from http://www.virtualbox.org. This file is free software;
+# you can redistribute it and/or modify it under the terms of the GNU
+# General Public License (GPL) as published by the Free Software
+# Foundation, in version 2 as it comes in the "COPYING" file of the
+# VirtualBox OSE distribution. VirtualBox OSE is distributed in the
+# hope that it will be useful, but WITHOUT ANY WARRANTY of any kind.
+#
+
+SUB_DEPTH = ../../../../..
+include $(KBUILD_PATH)/subheader.kmk
+
+
+ifdef VBOX_WITH_OPEN_WATCOM
+
+ #
+ # VBoxPcBios - The PC BIOS.
+ #
+ MISCBINS += VBoxPcBios
+ VBoxPcBios_TEMPLATE = VBoxBios
+ VBoxPcBios_DEFS = \
+ 	VBOX_PC_BIOS \
+ 	VBOX_LANBOOT_SEG=0xE200 \
+ 	VBOX_WITH_SCSI \
+ 	VBOX_WITH_AHCI
+ VBoxPcBios_LDFLAGS = \
+ 	output raw offset=0xF0000 \
+ 	order \
+ 	 clname DATA segaddr=0xF000 \
+ 	  segment _DATA \
+ 	 clname CODE \
+ 	  segment _TEXT   segaddr=0xF000 offset=0x1600 \
+ 	  segment BIOS32  segaddr=0xF000 offset=0xDA00 \
+ 	  segment BIOSSEG segaddr=0xF000 offset=0xE000
+ VBoxPcBios_SOURCES = \
+ 	bios.c \
+ 	print.c \
+ 	ata.c \
+ 	floppy.c \
+ 	eltorito.c \
+ 	boot.c \
+ 	keyboard.c \
+ 	disk.c \
+ 	serial.c \
+ 	system.c \
+ 	timepci.c \
+ 	ps2mouse.c \
+ 	parallel.c \
+ 	logo.c \
+ 	scsi.c \
+ 	ahci.c \
+ 	apm.c \
+ 	pcibios.c \
+ 	pciutil.c \
+ 	vds.c \
+ 	../../BiosCommonCode/support.asm \
+ 	pcibio32.asm \
+ 	apm_pm.asm \
+ 	$(VBoxPcBios32_1_TARGET) \
+ 	orgs.asm
+
+ # For 32-bit C code in PC BIOS.
+ LIBRARIES += VBoxPcBios32
+ VBoxPcBios32_TEMPLATE = VBoxBios32Lib
+ VBoxPcBios32_SOURCES = \
+       pci32.c
+
+ #
+ # Updates the alternative source file.
+ #
+ update-pcbios-source +| $(PATH_SUB_CURRENT)/VBoxBiosAlternative.asm $(PATH_SUB_CURRENT)/VBoxBiosAlternative.md5sum: \
+ 		$$(VBoxPcBios_1_TARGET) \
+ 		$(VBOX_MAKE_ALTERNATIVE_SOURCE) \
+		$(VBOX_VBOXCMP)
+ if1of ($(KBUILD_TYPE), release)
+	$(VBOX_MAKE_ALTERNATIVE_SOURCE) \
+		--bios-image $< \
+		--bios-map $(basename $<).map \
+		--bios-sym $(basename $<).sym \
+		--bios-type system \
+		--output $(VBoxPcBios_0_OUTDIR)/VBoxBiosAlternative.asm
+	$(QUIET)yasm -f bin -o $(VBoxPcBios_0_OUTDIR)/VBoxBiosAlternative.bin $(VBoxPcBios_0_OUTDIR)/VBoxBiosAlternative.asm
+	$(VBOX_VBOXCMP) $< $(VBoxPcBios_0_OUTDIR)/VBoxBiosAlternative.bin
+	$(CP) --changed -- $(VBoxPcBios_0_OUTDIR)/VBoxBiosAlternative.asm $(PATH_ROOT)/src/VBox/Devices/PC/BIOS/VBoxBiosAlternative.asm
+	$(REDIRECT) -C $(dir $(VBoxPcBios_1_TARGET)) -- \
+		$(MD5SUM_EXT) -bo $(VBoxPcBios_0_OUTDIR)/VBoxBiosAlternative.md5sum $(notdir $(VBoxPcBios_1_TARGET))
+	$(CP) --changed -- $(VBoxPcBios_0_OUTDIR)/VBoxBiosAlternative.md5sum $(PATH_ROOT)/src/VBox/Devices/PC/BIOS/VBoxBiosAlternative.md5sum
+	$(RM) -f -- $(VBoxPcBios_0_OUTDIR)/VBoxBiosAlternative.asm $(VBoxPcBios_0_OUTDIR)/VBoxBiosAlternative.bin $(VBoxPcBios_0_OUTDIR)/VBoxBiosAlternative.md5sum
+ else
+	$(QUIET)$(ECHO) "Fatal error: Can only update VBoxBiosAlternative.asm/md5sum with a release build."
+	$(QUIET)exit 1
+ endif
+
+endif # VBOX_WITH_OPEN_WATCOM
+
+
+#
+# The library containing the PC BIOS image.
+#
+LIBRARIES += PcBiosBin
+PcBiosBin_TEMPLATE  = VBOXR3
+PcBiosBin_DEFS      = IN_VBOXDD2
+PcBiosBin_SOURCES   = $(PcBiosBin_0_OUTDIR)/PcBiosBin.c
+PcBiosBin_CLEAN     = $(PcBiosBin_0_OUTDIR)/PcBiosBin.c
+
+ifdef VBOX_WITH_OPEN_WATCOM
+ $$(PcBiosBin_0_OUTDIR)/PcBiosBin.c: $$(VBoxPcBios_1_TARGET) $(VBOX_BIN2C) | $$(dir $$@)
+	$(call MSG_TOOL,bin2c,PcBiosBin,$<,$@)
+	$(QUIET)$(VBOX_BIN2C) -min 64 -max 256 -mask 0xffff -ascii -export PcBiosBinary $< $@
+else
+ PcBiosBin_CLEAN    += $(PcBiosBin_0_OUTDIR)/VBoxPcBios.rom
+
+ $$(PcBiosBin_0_OUTDIR)/PcBiosBin.c + $$(PcBiosBin_0_OUTDIR)/VBoxPcBios.rom: \
+		$(PATH_SUB_CURRENT)/VBoxBiosAlternative.asm \
+		$(PATH_SUB_CURRENT)/VBoxBiosAlternative.md5sum \
+		$(VBOX_BIN2C) | $$(dir $$@)
+	$(call MSG_TOOL,bin2c,PcBiosBin,$<,$@)
+	$(QUIET)yasm -f bin -o $(PcBiosBin_0_OUTDIR)/VBoxPcBios.rom $<
+	$(QUIET)$(REDIRECT) -C $(PcBiosBin_0_OUTDIR) -- \
+		$(MD5SUM_EXT) -c $(basename $<).md5sum
+	$(QUIET)$(VBOX_BIN2C) -min 64 -max 256 -mask 0xffff -ascii -export PcBiosBinary $(PcBiosBin_0_OUTDIR)/VBoxPcBios.rom $@
+	$(QUIET)$(RM) -f -- $$(PcBiosBin_0_OUTDIR)/VBoxPcBios.rom
+endif
+
+include $(FILE_KBUILD_SUB_FOOTER)
+

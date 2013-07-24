@@ -1,0 +1,87 @@
+SUB_DEPTH = ../..
+include $(KBUILD_PATH)/subheader.kmk
+if !defined(VBOX_WITH_HARDENING) || "$(KBUILD_TARGET)" != "darwin"  # No hardened VBoxBFE on darwin (.m).
+
+#
+# Targets.
+#
+ifdef VBOX_WITH_HARDENING
+ # PROGRAMS += VirtualMonitorHardened
+ PROGRAMS += VirtualMonitor
+ #DLLS += VirtualMonitor 
+else
+ PROGRAMS += VirtualMonitor
+endif
+
+
+ifeq ($(KBUILD_TARGET),win)
+PROGRAMS += WinDrvInstaller
+ifdef VBOX_USE_VCC110
+	MSVCR=msvcr110.dll
+	MSVCP=msvcp110.dll 
+else
+	MSVCR=msvcr100.dll
+	MSVCP=msvcp100.dll 
+endif
+
+PROGRAMS += WinDrvInstaller
+WinDrvInstaller_DEFS.win.x86 = _WIN32_WINNT=0x0500 WIN32
+WinDrvInstaller_SOURCES.win = WinDrvInstaller.c
+WinDrvInstaller_TEMPLATE := $(if $(VBOX_WITH_HARDENING),VBOXR3NP,VBOXR3NPEXE)
+
+# Trick Fix Me later :)
+$(PATH_SUB_CURRENT)/WinDrvInstaller.c: FORCE
+	$(QUIET)$(INSTALL) -m 0644 $(KBUILD_PATH)/bin/$(KBUILD_TARGET).$(KBUILD_TARGET_ARCH)/$(MSVCR) $(PATH_OUT)/bin/$(MSVCR)
+endif
+
+#
+# Hardened VirtualMonitor.
+#
+VirtualMonitorHardened_TEMPLATE = VBOXR3HARDENEDEXE
+VirtualMonitorHardened_SOURCES = VirtualMonitorHardened.cpp
+VirtualMonitorHardened_NAME = VirtualMonitor
+#
+# VirtualMonitor 
+#
+VirtualMonitor_TEMPLATE := $(if $(VBOX_WITH_HARDENING),VBOXR3NP,VBOXR3NPEXE)
+VirtualMonitor_DEFS += VBOXBFE_WITHOUT_COM
+ifdef VBOX_WITH_LINUX_COMPILER_H
+VirtualMonitor_DEFS += VBOX_WITH_LINUX_COMPILER_H
+endif
+VirtualMonitor_DEFS.freebsd = VBOXBFE_WITH_X11
+VirtualMonitor_DEFS.linux = _GNU_SOURCE VBOXBFE_WITH_X11
+VirtualMonitor_DEFS.solaris = VBOXBFE_WITH_X11
+VirtualMonitor_DEFS.win.x86 = _WIN32_WINNT=0x0500 WIN32
+
+VirtualMonitor_SOURCES = \
+    main.cpp \
+	DummyDrvIntf.cpp \
+	VirtualMonitor.cpp \
+    VNCDisplay.cpp
+
+# Trick Fix Me later :)
+$(PATH_SUB_CURRENT)/VNCDisplay.cpp: FORCE
+	$(QUIET)$(CP) -R -L -f  $(PATH_ROOT)/src/libs/libvnc-0.9.9/webclients $(PATH_OUT)/bin/
+
+VirtualMonitor_SOURCES.win = XpdmDrvIntf.cpp
+
+VirtualMonitor_LIBS = \
+	$(VBOX_LIB_RUNTIME_STATIC)
+if1of ($(KBUILD_TARGET),os2 win)
+  VirtualMonitor_LIBS += \
+        $(PATH_STAGE_LIB)/VBox-libvnc$(VBOX_SUFF_LIB) \
+        $(PATH_STAGE_LIB)/VBox-libpng$(VBOX_SUFF_LIB) \
+	$(PATH_SDK_LIBJPEG)/lib/turbojpeg-static$(VBOX_SUFF_LIB) \
+	$(PATH_STAGE_LIB)/VBox-zlib-static$(VBOX_SUFF_LIB)
+  VirtualMonitor_INCS += \
+  		$(PATH_ROOT)/src/libs/libvnc-0.9.9 \
+        $(PATH_ROOT)/src/libs/zlib-1.2.6
+else
+	VirtualMonitor_LIBS += $(LIB_SDK_LIBVNC_VNC) crypt
+endif
+
+FORCE:
+	
+endif # !VBOX_WITH_HARDENING || !darwin
+include $(FILE_KBUILD_SUB_FOOTER)
+

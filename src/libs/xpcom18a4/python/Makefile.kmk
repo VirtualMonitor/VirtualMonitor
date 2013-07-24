@@ -1,0 +1,218 @@
+# $Id: Makefile.kmk $
+## @file
+# Sub-Makefile for Python bindings
+#
+
+#
+# Copyright (C) 2009-2012 Oracle Corporation
+#
+# This file is part of VirtualBox Open Source Edition (OSE), as
+# available from http://www.virtualbox.org. This file is free software;
+# you can redistribute it and/or modify it under the terms of the GNU
+# General Public License (GPL) as published by the Free Software
+# Foundation, in version 2 as it comes in the "COPYING" file of the
+# VirtualBox OSE distribution. VirtualBox OSE is distributed in the
+# hope that it will be useful, but WITHOUT ANY WARRANTY of any kind.
+#
+
+SUB_DEPTH = ../../../..
+include $(KBUILD_PATH)/subheader.kmk
+
+ifdef VBOX_WITH_MULTIVERSION_PYTHON
+ VBOX_MULTIPYTHON = 1
+else
+ VBOX_MULTIPYTHON = 0
+endif
+
+#
+# List of supported Python versions, defining a number of
+# VBOX_PYTHON[25|26|27|28|DEF]_[INC|LIB] variables which get picked up below.
+#
+ifeq ($(KBUILD_TARGET),darwin) # Relatively predictable, don't script.
+ ifeq ($(KBUILD_TARGET_ARCH),x86)
+  VBOX_PYTHON25_INC = $(VBOX_PATH_MACOSX_SDK)/usr/include/python2.5
+  VBOX_PYTHON25_LIB = $(VBOX_PATH_MACOSX_SDK)/usr/lib/libpython2.5.dylib
+ endif
+ if  !defined(VBOX_WITHOUT_VBOXPYTHON_FOR_OSX_10_6) \
+  && (   !defined(VBOX_OSE) \
+      || "$(wildcard $(VBOX_PATH_MACOSX_SDK_10_6)/usr/lib/libpython2.6.dylib)" != "")
+  VBOX_PYTHON26_INC = $(VBOX_PATH_MACOSX_SDK_10_6)/usr/include/python2.6
+  VBOX_PYTHON26_LIB = $(VBOX_PATH_MACOSX_SDK_10_6)/usr/lib/libpython2.6.dylib
+ endif
+ if  !defined(VBOX_WITHOUT_VBOXPYTHON_FOR_OSX_10_7) \
+  && (   defined(VBOX_NOT_OSE_LATER_SOMETIME) \
+      || "$(wildcard $(VBOX_PATH_MACOSX_SDK_10_7)/usr/lib/libpython2.7.dylib)" != "")
+  VBOX_PYTHON27_INC = $(VBOX_PATH_MACOSX_SDK_10_7)/usr/include/python2.7
+  VBOX_PYTHON27_LIB = $(VBOX_PATH_MACOSX_SDK_10_7)/usr/lib/libpython2.7.dylib
+ endif
+
+else
+ # Use the script.
+ $(eval $(subst |,$(NL),$(shell $(VBOX_BLD_PYTHON) \
+	$(PATH_SUB_CURRENT)/gen_python_deps.py \
+	    $(KBUILD_TARGET) \
+	    $(KBUILD_TARGET_ARCH) \
+	    $(VBOX_MULTIPYTHON) )))
+endif
+
+ifndef VBOX_ONLY_SDK
+
+#
+# Base Python Client Module - the C++/XPCOM bits (not actually built).
+#
+VBoxPythonBase_TEMPLATE = XPCOM
+VBoxPythonBase_CXXFLAGS = -Wno-write-strings
+VBoxPythonBase_DLLSUFF.darwin = .so
+VBoxPythonBase_DEFS     = \
+	_IMPL_NS_COM \
+	_IMPL_NS_BASE \
+	EXPORT_XPTI_API \
+        EXPORT_XPT_API \
+	VBOX_PYXPCOM \
+	VBOX_WITH_XPCOM \
+	VBOX_PYXPCOM_VERSIONED
+#VBoxPythonBase_DEFS.debug = \
+#	VBOX_DEBUG_LIFETIMES
+VBoxPythonBase_INCS     = \
+	src
+VBoxPythonBase_SOURCES  = \
+	src/module/_xpcom.cpp \
+	src/dllmain.cpp \
+	src/ErrorUtils.cpp \
+	src/PyGBase.cpp \
+	src/PyGInputStream.cpp \
+	src/PyGModule.cpp \
+	src/PyGStub.cpp \
+	src/PyGWeakReference.cpp \
+	src/PyIClassInfo.cpp \
+	src/PyIComponentManager.cpp \
+	src/PyIComponentManagerObsolete.cpp \
+	src/PyIEnumerator.cpp \
+	src/PyIID.cpp \
+	src/PyIInputStream.cpp \
+	src/PyIInterfaceInfo.cpp \
+	src/PyIInterfaceInfoManager.cpp \
+	src/PyISimpleEnumerator.cpp \
+	src/PyISupports.cpp \
+	src/PyIVariant.cpp \
+	src/Pyxpt_info.cpp \
+	src/TypeObject.cpp \
+	src/VariantUtils.cpp
+VBoxPythonBase_LIBS     = \
+	$(PATH_STAGE_LIB)/VBoxCOM$(VBOX_SUFF_LIB) \
+	$(PATH_STAGE_BIN)/VBoxXPCOM$(VBOX_SUFF_DLL)
+
+
+ifdef VBOX_PYTHON23_INC
+#
+# Python 2.3 version
+#
+DLLS += VBoxPython2_3
+VBoxPython2_3_EXTENDS    = VBoxPythonBase
+VBoxPython2_3_EXTENDS_BY = appending
+VBoxPython2_3_TEMPLATE   = XPCOM$(if-expr "$(KBUILD_TARGET)" == "darwin",OSX104,)
+VBoxPython2_3_INCS       = $(VBOX_PYTHON23_INC)
+VBoxPython2_3_LIBS       = $(VBOX_PYTHON23_LIB)
+endif
+
+ifdef VBOX_PYTHON24_INC
+#
+# Python 2.4 version
+#
+DLLS += VBoxPython2_4
+VBoxPython2_4_EXTENDS    = VBoxPythonBase
+VBoxPython2_4_EXTENDS_BY = appending
+VBoxPython2_4_INCS       = $(VBOX_PYTHON24_INC)
+VBoxPython2_4_LIBS       = $(VBOX_PYTHON24_LIB)
+endif
+
+ifdef VBOX_PYTHON25_INC
+#
+# Python 2.5 version
+#
+DLLS += VBoxPython2_5
+VBoxPython2_5_EXTENDS    = VBoxPythonBase
+VBoxPython2_5_EXTENDS_BY = appending
+VBoxPython2_5_TEMPLATE   = XPCOM
+VBoxPython2_5_INCS       = $(VBOX_PYTHON25_INC)
+VBoxPython2_5_LIBS       = $(VBOX_PYTHON25_LIB)
+endif
+
+ifdef VBOX_PYTHON26_INC
+#
+# Python 2.6 version
+#
+DLLS += VBoxPython2_6
+VBoxPython2_6_EXTENDS    = VBoxPythonBase
+VBoxPython2_6_EXTENDS_BY = appending
+VBoxPython2_6_TEMPLATE   = XPCOM$(if-expr "$(KBUILD_TARGET)" == "darwin",OSX106,)
+VBoxPython2_6_INCS       = $(VBOX_PYTHON26_INC)
+VBoxPython2_6_LIBS       = $(VBOX_PYTHON26_LIB)
+endif
+
+ifdef VBOX_PYTHON27_INC
+#
+# Python 2.7 version
+#
+DLLS += VBoxPython2_7
+VBoxPython2_7_EXTENDS    = VBoxPythonBase
+VBoxPython2_7_EXTENDS_BY = appending
+VBoxPython2_7_TEMPLATE   = XPCOM$(if-expr "$(KBUILD_TARGET)" == "darwin",OSX107,)
+VBoxPython2_7_INCS       = $(VBOX_PYTHON27_INC)
+VBoxPython2_7_LIBS       = $(VBOX_PYTHON27_LIB)
+endif
+
+ifdef VBOX_PYTHON28_INC
+#
+# Python 2.8 version
+#
+DLLS += VBoxPython2_8
+VBoxPython2_8_EXTENDS    = VBoxPythonBase
+VBoxPython2_8_EXTENDS_BY = appending
+VBoxPython2_8_INCS       = $(VBOX_PYTHON28_INC)
+VBoxPython2_8_LIBS       = $(VBOX_PYTHON28_LIB)
+endif
+
+ifdef VBOX_PYTHONDEF_INC
+#
+# Python without versioning
+#
+DLLS += VBoxPython
+VBoxPython_EXTENDS      = VBoxPythonBase
+VBoxPython_DEFS         = $(filter-out VBOX_PYXPCOM_VERSIONED,$(VBoxPythonBase_DEFS))
+VBoxPython_INCS         = $(VBoxPythonBase_INCS) $(VBOX_PYTHONDEF_INC)
+if "$(KBUILD_TARGET)" == "linux"
+ VBoxPython_LIBS        = $(VBoxPythonBase_LIBS)
+else
+ VBoxPython_LIBS        = $(VBoxPythonBase_LIBS) $(VBOX_PYTHONDEF_LIB)
+endif
+endif
+
+endif # VBOX_ONLY_SDK
+
+#
+# Install the python modules.
+#
+INSTALLS += VBoxPython-inst-py-xpcom
+VBoxPython-inst-py-xpcom_INST = $(INST_SDK)bindings/xpcom/python/xpcom/
+VBoxPython-inst-py-xpcom_MODE = a+r,u+w
+VBoxPython-inst-py-xpcom_SOURCES = \
+	vboxxpcom.py \
+	components.py \
+	file.py \
+	__init__.py \
+	nsError.py \
+	primitives.py \
+	xpcom_consts.py \
+	xpt.py \
+	client/__init__.py=>client/__init__.py \
+	server/__init__.py=>server/__init__.py \
+	server/enumerator.py=>server/enumerator.py \
+	server/factory.py=>server/factory.py \
+	server/loader.py=>server/loader.py \
+	server/module.py=>server/module.py \
+	server/policy.py=>server/policy.py
+
+
+include $(FILE_KBUILD_SUB_FOOTER)
+

@@ -1,0 +1,18 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=1.0
+Name=@VBOX_PRODUCT@
+GenericName=Virtual Machine
+Type=Application
+Exec=VirtualBox %U
+TryExec=VirtualBox
+MimeType=application/x-virtualbox-vbox;application/x-virtualbox-vbox-extpack;application/x-virtualbox-ovf;application/x-virtualbox-ova;
+DocPath=file://@VBOX_DOC_PATH@/UserManual.pdf
+Icon=virtualbox
+Categories=Emulator;System;X-MandrivaLinux-System;Application;
+Comment=Run several virtual systems on a single host computer
+Comment[de]=Mehrere virtuelle Maschinen auf einem einzigen Rechner ausführen
+Comment[it]=Esegui più macchine virtuali su un singolo computer
+Comment[pl]=Uruchamianie wielu systemów wirtualnych na jednym komputerze gospodarza
+Comment[sv]=Kör flera virtuella system på en enda värddator
+Comment[ko]=가상 머신

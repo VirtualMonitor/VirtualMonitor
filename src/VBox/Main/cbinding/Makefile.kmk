@@ -1,0 +1,142 @@
+# $Id: Makefile.kmk $
+## @file
+# Sub-Makefile for the VBox C Binding.
+#
+
+#
+# Copyright (C) 2009-2012 Oracle Corporation
+#
+# This file is part of VirtualBox Open Source Edition (OSE), as
+# available from http://www.virtualbox.org. This file is free software;
+# you can redistribute it and/or modify it under the terms of the GNU
+# General Public License (GPL) as published by the Free Software
+# Foundation, in version 2 as it comes in the "COPYING" file of the
+# VirtualBox OSE distribution. VirtualBox OSE is distributed in the
+# hope that it will be useful, but WITHOUT ANY WARRANTY of any kind.
+#
+
+SUB_DEPTH = ../../../..
+include $(KBUILD_PATH)/subheader.kmk
+
+
+if defined(VBOX_WITH_XPCOM) || defined(VBOX_ONLY_SDK)
+#
+# The samples
+#
+INSTALLS += XpComCSamples
+XpComCSamples_MODE = a+r,u+rw
+XpComCSamples_INST = \
+	$(INST_SDK)bindings/xpcom/cbinding/samples/
+XpComCSamples_SOURCES = \
+	tstXPCOMCGlue.c \
+	tstXPCOMCCall.c \
+	makefile.tstXPCOMCGlue=>Makefile
+
+INSTALLS += XpComCGlue
+XpComCGlue_MODE = a+r,u+rw
+XpComCGlue_INST = \
+	$(INST_SDK)bindings/xpcom/cbinding/
+XpComCGlue_SOURCES = \
+	VBoxXPCOMCGlue.c \
+	$(XpComCHeaders_0_OUTDIR)/VBoxXPCOMCGlue.h
+
+INSTALLS += XpComCHeaders
+XpComCHeaders_MODE = a+r,u+rw
+XpComCHeaders_INST = $(INST_SDK)bindings/xpcom/include/
+XpComCHeaders_SOURCES = \
+	VBoxCAPI_v2_2.h \
+	VBoxCAPI_v3_0.h \
+	VBoxCAPI_v3_1.h \
+	VBoxCAPI_v3_2.h \
+	VBoxCAPI_v4_0.h \
+	VBoxCAPI_v4_1.h \
+	$(XpComCHeaders_0_OUTDIR)/VBoxCAPI.h=>VBoxCAPI_v$(VBOX_API_VERSION).h
+
+$$(XpComCHeaders_0_OUTDIR)/VBoxXPCOMCGlue.h: \
+		$(PATH_SUB_CURRENT)/VBoxXPCOMCGlue.h.in \
+		$(MAKEFILE_CURRENT) \
+		| $$(dir $$@)
+	$(call MSG_GENERATE,,$@)
+	$(QUIET)$(SED) \
+		-e 's/@VBOX_API_VERSION@/$(VBOX_API_VERSION)/' \
+		<  $< >  $@
+
+$$(XpComCHeaders_0_OUTDIR)/VBoxCAPI.h: \
+		$(PATH_SUB_CURRENT)/xpcidl.xsl \
+		$(VBOX_XIDL_FILE) \
+		| $$(dir $$@)
+	$(call MSG_TOOL,xsltproc,XpComCHeaders,$<,$@)
+	$(QUIET)$(VBOX_XSLTPROC) -o $@ $^
+
+endif # VBOX_WITH_XPCOM || SDK
+if !defined(VBOX_ONLY_SDK) && defined(VBOX_WITH_XPCOM)
+
+ #
+ # The C utility DLL
+ #
+ ifdef VBOX_WITH_XPCOM
+ DLLS += VBoxXPCOMC
+ VBoxXPCOMC_TEMPLATE = VBOXMAINDLL
+ VBoxXPCOMC_DEFS = IN_VBOXXPCOMC
+ VBoxXPCOMC_SOURCES = \
+ 	VBoxXPCOMC.cpp
+ VBoxXPCOMC_INCS = \
+  	$(XpComCHeaders_0_OUTDIR)
+ VBoxXPCOMC_INTERMEDIATES = \
+ 	$(XpComCHeaders_0_OUTDIR)/VBoxCAPI.h
+ endif
+
+ #
+ # The C glue library.
+ #
+ LIBRARIES += VBoxXPCOMCGlue
+ VBoxXPCOMCGlue_TEMPLATE = VBOXMAINEXE
+ VBoxXPCOMCGlue_DEFS = IN_VBOXXPCOMC
+ VBoxXPCOMCGlue_SOURCES = \
+ 	VBoxXPCOMCGlue.c
+ VBoxXPCOMCGlue_INCS = \
+  	$(VBOX_PATH_SDK)/bindings/xpcom/cbinding
+ VBoxXPCOMCGlue_INTERMEDIATES = \
+ 	$(VBOX_PATH_SDK)/bindings/xpcom/cbinding/VBoxXPCOMCGlue.h \
+ 	$(VBOX_PATH_SDK)/bindings/xpcom/include/VBoxCAPI_v$(VBOX_API_VERSION).h
+
+ if defined(VBOX_WITH_TESTCASES) && "$(KBUILD_TARGET)" != "darwin"
+  #
+  # The testcase (also in samples).
+  # C testcase using the dynamic glue.
+  #
+  PROGRAMS += tstXPCOMCGlue
+  tstXPCOMCGlue_TEMPLATE = VBOXR3EXE
+  tstXPCOMCGlue_INCS = \
+  	$(VBOX_PATH_SDK)/bindings/xpcom/include \
+  	$(VBOX_PATH_SDK)/bindings/xpcom/cbinding
+  tstXPCOMCGlue_INTERMEDIATES = \
+ 	$(VBOX_PATH_SDK)/bindings/xpcom/cbinding/VBoxXPCOMCGlue.h \
+  	$(VBOX_PATH_SDK)/bindings/xpcom/include/VBoxCAPI_v$(VBOX_API_VERSION).h
+  tstXPCOMCGlue_SOURCES = \
+  	tstXPCOMCGlue.c
+  tstXPCOMCGlue_LIBS = \
+  	$(VBoxXPCOMCGlue_1_TARGET)
+
+  ifeq (disabled,1)
+   #
+   # The callback testcase.
+   #
+   PROGRAMS += tstXPCOMCCall
+   tstXPCOMCCall_TEMPLATE = VBOXR3EXE
+   tstXPCOMCCall_INCS = \
+   	$(VBOX_PATH_SDK)/bindings/xpcom/include
+   tstXPCOMCCall_INTERMEDIATES = \
+   	$(VBOX_PATH_SDK)/bindings/xpcom/include/VBoxCAPI_v$(VBOX_API_VERSION).h
+   tstXPCOMCCall_SOURCES = \
+   	tstXPCOMCCall.c
+   tstXPCOMCCall_LIBS = \
+   	$(VBoxXPCOMCGlue_1_TARGET)
+  endif
+ endif
+
+endif # ! VBOX_ONLY_SDK
+
+# generate rules.
+include $(FILE_KBUILD_SUB_FOOTER)
+

@@ -1,0 +1,797 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+  "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
+<chapter id="networkingdetails">
+  <title>Réseau virtuel</title>
+
+  <para>Comme il a été brièvement indiqué au <xref linkend="settings-network" />,
+  VirtualBox fournit huit cartes Ethernet PCI virtuelles pour chaque machine 
+  virtuelle. Pour chacune de ces cartes, vous pouvez sélectionner individuellement<orderedlist>
+      <listitem>
+        <para>1. le matériel qui sera virtualisé ou</para>
+      </listitem>
+
+      <listitem>
+        <para>2. le mode de virtualisation avec lequel la carte virtuelle agira
+        par rapport à votre matériel réseau physique sur l'hôte.</para>
+      </listitem>
+    </orderedlist></para>
+
+  <para>Quatre des cartes réseau peuvent être configurées dans la section « 
+  Réseau » des paramètres de la boîte de dialogue dans l'interface graphique de 
+  VirtualBox. Vous pouvez configurer les huit cartes réseau en ligne de commande 
+  avec VBoxManage modifyvm ; voir <xref linkend="vboxmanage-modifyvm" />.</para>
+
+  <para>Ce chapitre explique les divers paramètres réseau avec plus détails.</para>
+
+  <sect1 id="nichardware">
+    <title>Matériel de réseau virtuel</title>
+
+    <para>Pour chaque carte, vous pouvez sélectionner individuellement le type
+    de <emphasis>matériel</emphasis> qui sera présenté à la machine virtuelle. 
+    VirtualBox peut virtualiser les six types de matériels de carte suivants :<itemizedlist>
+        <listitem>
+          <para>AMD PCNet PCI II (Am79C970A);</para>
+        </listitem>
+
+        <listitem>
+          <para>AMD PCNet FAST III (Am79C973, celle par défaut) ;</para>
+        </listitem>
+
+        <listitem>
+          <para>Intel PRO/1000 MT Desktop (82540EM);</para>
+        </listitem>
+
+        <listitem>
+          <para>Intel PRO/1000 T Server (82543GC);</para>
+        </listitem>
+
+        <listitem>
+          <para>Intel PRO/1000 MT Server (82545EM);</para>
+        </listitem>
+
+        <listitem>
+          <para>Paravirtualized network adapter (virtio-net).</para>
+        </listitem>
+      </itemizedlist></para>
+
+    <para>La PCNet FAST III est celle par défaut parce qu'elle est supportée par 
+    presque tous les systèmes d'exploitation d'ordinateur et le gestionnaire de
+    démarrage GNU GRUB. Sauf que les adaptateurs de la famille Intel PRO/1000 
+    sont choisis pour certains types de système d'exploitation invités qui 
+    n'incluent plus les pilotes de la carte PCNet, tels que Windows Vista.</para>
+
+    <para>Celle de type Intel PRO/1000 MT Desktop fonctionne avec Windows Vista
+    et les versions supérieures. La variante Server T de la carte Intel PRO/1000 
+    est reconnue par les invités Windows XP sans l'installation de pilotes 
+    supplémentaires. La variante Server T facilite les importations OVF à partir
+    d'autres plateformes.</para>
+
+    <para>L'<emphasis role="bold">« adaptateur réseau para-virtualisé 
+    (virtio-net »</emphasis> est spécial. Si vous le sélectionnez, VirtualBox 
+    <emphasis>ne virtualise pas</emphasis> du matériel réseau classique (qui est 
+    supporté par les systèmes d'exploitation habituels hors du PC). VirtualBox 
+    s'attend par contre à ce qu'une interface logicielle spéciale pour les 
+    environnements virtualisés soient fournies par l'invité, évitant ainsi la 
+    complexité d'émuler du matériel réseau et améliorant la performance réseau. 
+    À partir de la version 3.1, VirtualBox fournit le support des pilotes de 
+    réseau « virtio » industriels, qui font partie du projet libre KVM.</para>
+
+    <para>Les pilotes de réseau « virtio » sont disponibles pour les systèmes d'exploitation invités
+    suivants :</para>
+
+    <para><itemizedlist>
+        <listitem>
+          <para>Les noyaux Linux version 2.6.25 ou supérieur peuvent être 
+          configurés pour fournir le support de virtio ; certaines distributions 
+          ont aussi porté virtio dans des noyaux plus anciens.</para>
+        </listitem>
+
+        <listitem>
+          <para>Pour Windows 2000, XP et Vista, les pilotes virtio peuvent être
+          téléchargés et installés à partir de la page Internet du projet KVM.<footnote>
+              <para><ulink
+              url="http://www.linux-kvm.org/page/WindowsGuestDrivers">http://www.linux-kvm.org/page/WindowsGuestDrivers</ulink>.</para>
+            </footnote></para>
+        </listitem>
+      </itemizedlist></para>
+
+    <para>VirtualBox a aussi un support pour les <emphasis role="bold">cadres 
+    appelés jumbo</emphasis>, par exemple 
+    les paquets réseaux avec plus de 1500 bytes de données fournies pour que 
+    vous utilisiez la virtualisation de la carte réseau Intel et le réseau 
+    bridgé. En d'autres termes, les cadres jumbo ne sont pas supportés avec les
+    périphériques réseau AMD ; dans ces cas les paquets jumbo seront refusés 
+    sans message à la fois dans la direction de la transmission et de la 
+    réception. Les systèmes d'exploitation invités qui essaient d'utiliser 
+    cette fonctionnalité verront cela comme une perte de paquets, ce qui peut 
+    provoquer un comportement inattendu de certaines applications dans l'invité. 
+    Cela n'entraîne pas de problèmes avec des systèmes d'exploitation invités 
+    dans leur configuration par défaut, vu que les cadres jumbo doivent être 
+    explicitement activés.</para>
+  </sect1>
+
+  <sect1 id="networkingmodes">
+    <title>Introduction aux modes réseaux</title>
+
+    <para>Chacun des huit adaptateurs réseau peut être configuré séparément pour 
+    agir dans l'un des cinq modes suivants :<glosslist>
+        <glossentry>
+          <glossterm>Non attaché</glossterm>
+
+          <glossdef>
+            <para>Dans ce mode, VirtualBox indique à l'invité qu'une carte 
+            réseau est présente mais qu'il n'y a pas de connexion -- comme si 
+            aucun câble Ethernet n'était branché sur la carte. - De cette façon, 
+            il est possible de « débrancher » le câble Ethernet virtuel et de 
+            couper la connexion, ce qui peut être utile pour informer un système 
+            d'exploitation invité qu'aucune connexion réseau n'est disponible et 
+            l'obliger à une reconfiguration.</para>
+          </glossdef>
+        </glossentry>
+
+        <glossentry>
+          <glossterm>Network Address Translation (NAT)</glossterm> (traduction
+          d'adresse réseau)
+
+          <glossdef>
+            <para>Si tout ce que vous voulez faire est de naviguer sur Internet, 
+            télécharger des fichiers et lire les messages à l'intérieur de 
+            l'invité, ce mode par défaut devrait vous suffire et vous pouvez 
+            sauter en toute sécurité le reste de cette section. Merci de 
+            remarquer qu'il y a certaines limitations quand on utilise le partage 
+            de fichiers Windows (voir le <xref linkend="nat-limitations" /> pour
+            des détails).</para>
+          </glossdef>
+        </glossentry>
+
+        <glossentry>
+          <glossterm>Réseau bridgé</glossterm>
+
+          <glossdef>
+            <para>C'est pour des besoins réseau plus avancés tels que des 
+            simulations de réseau et le fonctionnement de serveurs dans un 
+            invité. Lorsqu'il est activé, VirtualBox se connecte à une de vos 
+            cartes réseaux installées et échange directement des paquets réseaux, 
+            contournant la pile réseau de votre système d'exploitation hôte.</para>
+          </glossdef>
+        </glossentry>
+
+        <glossentry>
+          <glossterm>Réseau interne</glossterm>
+
+          <glossdef>
+            <para>Ceci peut être utilisé pour créer un genre différent de réseau 
+            de type logiciel, visible par les  machines virtuelles sélectionnées 
+            mais pas pour les applications en fonction sur l'hôte ou dans le 
+            monde extérieur.</para>
+          </glossdef>
+        </glossentry>
+
+        <glossentry>
+          <glossterm>Réseau privé-hôte</glossterm>
+
+          <glossdef>
+            <para>Ceci peut être utilisé pour créer un réseau contenant l'hôte 
+            et un ensemble de machines virtuelles, sans qu'il y ait besoin de 
+            l'interface physique de l'hôte. À la place, une interface réseau 
+            virtuelle (comme une interface loopback) est créée sur l'hôte, 
+            fournissant la connectivité parmi les machines virtuelles et l'hôte.</para>
+          </glossdef>
+        </glossentry>
+
+        <glossentry>
+          <glossterm>Réseau générique</glossterm>
+
+          <glossdef>
+            <para>Les modes rarement utilisés partagent la même interface réseau
+            générique mais ils permettent à l'utilisateur de sélectionner un 
+            pilote qui peut être inclu dans VirtualBox ou distribué dans un
+            pack d'extension.</para>
+            <para>Pour l'heure, il y a deux sous-modes disponibles :</para>
+            <para>
+              <glosslist>
+                <glossentry>
+                  <glossterm>Tunnel UDP</glossterm>
+                  <glossdef>
+                    <para>On peut l'utiliser pour connecter directement des 
+                    machines virtuelles en fonction sur des hôtes différents,
+                    facilement et de manière transparente, via une infrastructure 
+                    réseau existante.</para>
+                  </glossdef>
+                </glossentry>
+                <glossentry>
+                  <glossterm>Réseau VDE (Virtual Distributed Ethernet)</glossterm>
+                  <glossdef>
+                    <para>Cette option peut être utilisée pour se connecter à 
+                    un switch Virtual Distributed Ethernet (Ethernet distribué 
+                    virtuel) d'un hôte Linux ou FreeBSD. Pour l'instant, il
+                    implique de compiler VirtualBox à partir des sources, car les
+                    paquets d'Oracle ne l'incluent pas.</para>
+                  </glossdef>
+                </glossentry>
+              </glosslist>
+            </para>
+          </glossdef>
+        </glossentry>
+      </glosslist></para>
+
+    <para>Les sections suivantes décrivent les modes de réseau disponibles avec
+    plus de détails.</para>
+  </sect1>
+
+  <sect1 id="network_nat">
+    <title>Network Address Translation (NAT)</title>
+
+    <para>La traduction d'adresses réseaux (NAT) est la façon la plus simple 
+    d'accéder à un réseau externe depuis une machine virtuelle. Habituellement, 
+    cela ne demande aucune configuration sur le réseau hôte et le système invité. 
+    Pour cette raison, c'est le mode réseau par défaut de VirtualBox.</para>
+
+    <para>Une machine virtuelle où le NAT est activé agit comme un vrai 
+    ordinateur qui se connecte à Internet à travers un routeur. Le « routeur »,
+    dans ce cas, est le moteur réseau de VirtualBox qui dresse le plan du 
+    trafic venant et à destination de la machine virtuelle de façon intégréte. 
+    L'inconvénient du mode NAT est que, tout comme se comporte un réseau privé 
+    derrière un routeur, la machine virtuelle est invisible et injoignable à 
+    partir et à l'extérieur sur Internet ; vous ne pouvez pas lancer de serveur 
+    de cette façon sauf si vous réglez le forwarding (routage) de ports (décrit 
+    ci-dessous).</para>
+
+    <para>Les trames réseau envoyés par le système d'exploitation invité sont 
+    reçus par le moteur NAT de VirtualBox, qui extrait les données TCP/IP et les 
+    réexpédie en utilisant le système d'exploitation de l'hôte. Sur une 
+    application de l'hôte ou sur un autre ordinateur du même réseau que l'hôte, 
+    on a l'impression que les données ont été envoyées par l'application 
+    VirtualBox sur l'hôte, en utilisant une adresse IP appartenant à l'hôte. 
+    VirtualBox écoute les réponses aux paquets envoyés, puis les réemballe et les 
+    renvoie sur la machine invitée sur son réseau privé.</para>
+
+    <para>La machine virtuelle reçoit son adresse réseau et sa configuration sur 
+    le réseau privé à partir d'un serveur DHCP intégré dans VirtualBox. L'adresse 
+    IP ainsi assignée à la machine virtuelle est en général sur un réseau 
+    complètement différent de l'hôte. Comme plus d'une carte d'une machine 
+    virtuelle peut être paramétrée pour utiliser NAT, la première carte est 
+    connectée au réseau privé 10.0.2.0, la deuxième au réseau 10.0.3.0 et ainsi 
+    de suite. Si vous devez modifier la plage d'IP assignées à l'hôte pour une 
+    raison quelconque, merci de vous reporter au <xref linkend="changenat" />.</para>
+
+    <sect2 id="natforward">
+      <title>Configurer la redirection de ports avec NAT</title>
+
+      <para>Comme la machine virtuelle est connectée à un réseau privé interne à 
+      VirtualBox et qu'il est invisible pour l'hôte, les services réseau de 
+      l'invité ne sont pas accessibles pour la machine hôte ou pour d'autres 
+      ordinateurs du même réseau. Néanmoins, comme un routeur physique, 
+      VirtualBox peut effectuer un <emphasis role="bold">transfert de ports</emphasis>
+      sélectionné. Cela signifie que VirtualBox écoute certains ports sur
+      l'hôte et renvoie tous les paquets qui y arrivent vers l'invité, sur un
+      port identique ou différent.</para>
+
+      <para>Pour une application de l'hôte ou d'autres machines physiques (ou 
+      virtuelles) du réseau, c'est comme si le service derrière le proxy 
+      fonctionnait finalement sur l'hôte. Cela signifie aussi que vous ne pouvez 
+      pas exécuter le même service sur les mêmes ports que sur l'hôte. Néanmoins, 
+      vous en tirez les avantages de l'exécution d'un service dans une machine 
+      virtuelle : par exemple les services de la machine hôte ou d'autres 
+      machines virtuelles ne peuvent pas être compromis ou plantés par une 
+      vulnérabilité ou un bogue du service, et le service peut s'exécuter sur un 
+      système d'exploitation différent du système hôte.</para>
+
+      <para>Vous pouvez paramétrer un service invité que vous souhaitez mettre 
+      derrière un proxy en utilisant l'outil en ligne de commande
+      <computeroutput>VBoxManage</computeroutput> ; pour des détails, merci de 
+      vous référer au <xref linkend="vboxmanage-modifyvm" />.</para>
+
+      <para>Vous devrez savoir quels ports sur l'invité le service utilise et 
+      décider quels ports utiliser sur l'hôte (vous voudrez souvent, mais pas 
+      toujours, utiliser les mêmes ports sur l'invité et sur l'hôte). Vous pouvez 
+      utiliser n'importe quel port de l'hôte qui n'est pas déjà utilisé par un 
+      service. Par exemple, pour paramétrer des connexions entrantes NAT vers un 
+      serveur <computeroutput>ssh</computeroutput> de l'invité, utilisez la 
+      commande suivante : <screen>VBoxManage modifyvm "nom VM" --natpf1 "guestssh,tcp,,2222,,22"</screen>Avec
+      l'exemple ci-dessus, tout le trafic <computeroutput>tcp</computeroutput> 
+      arrivant sur le port 2222 sur n'importe quelle interface de l'hôte sera 
+      transféré sur le port 22 dans l'invité. Le nom du protocole <computeroutput>tcp</computeroutput> 
+      est un attribut obligatoire définissant quel protocole devrait être utilisé 
+      pour la redirection (on pourrait aussi utiliser (<computeroutput>udp</computeroutput>). 
+      Le nom <computeroutput>guestssh</computeroutput> est purement descriptif 
+      et sera généré automatiquement si vous n'en spécifiez 
+      pas. Le numéro après <computeroutput>--natpf</computeroutput> nomme la 
+      carte réseau, comme dans  d'autres 
+      paramétrages de VboxManage.</para>
+
+      <para>Pour supprimer à nouveau cette règle de redirection, utilisez la commande suivante :
+      <screen>VBoxManage modifyvm "nom VM" --natpf1 delete "guestssh"</screen></para>
+
+      <para>Si pour une raison quelconque l'invité utilise une adresse IP 
+      statique non attribuée par le serveur DHCP intégré, il faut spécifier l'IP 
+      de l'invité lors de l'enregistrement de la règle de redirection : <screen>VBoxManage modifyvm "nom VM" --natpf1
+      "guestssh,tcp,,2222,10.0.2.19,22"</screen>Cet exemple est identique au 
+      précédent, sauf qu'on dira au moteur NAT qu'on peut trouver l'invité sur 
+      l'adresse 10.0.2.19.</para>
+
+      <para>Pour rediriger <emphasis>tout</emphasis> le trafic entrant d'une 
+      interface spécifique de l'hôte vers l'invité, spécifiez l'IP de cette 
+      interface hôte comme ceci :<screen>VBoxManage modifyvm "nom VM" --natpf1 "guestssh,tcp,127.0.0.1,2222,,22"</screen>Ceci
+      redirige tout le trafic TCP arrivant sur l'interface localhost (127.0.0.1) 
+      via le port 2222 vers le port 22 de l'invité.</para>
+
+      <para>Il n'est pas possible de configurer des connexions NAT entrantes 
+      pendant que la VM est en fonction. Néanmoins, vous pouvez modifier les 
+      paramètres d'une VM actuellement sauvegardée (ou éteinte) dans un 
+      instantané.</para>
+    </sect2>
+
+    <sect2 id="nat-tftp">
+      <title>Amorçage PXE avec NAT</title>
+
+      <para>L'amorçage PXE est à présent supporté par le mode NAT. Le serveur 
+      DHCP NAT fournit un fichier d'amorçage nommé sous la forme
+      <computeroutput>nomvm.pxe</computeroutput> si le répertoire
+      <computeroutput>TFTP</computeroutput> existe dans le répertoire où est 
+      conservé le fichier <computeroutput>VirtualBox.xml</computeroutput> de 
+      l'utilisateur. C'est à l'utilisateur de fournir 
+      <computeroutput>nomvm.pxe</computeroutput>.</para>
+    </sect2>
+
+    <sect2 id="nat-limitations">
+      <title>Limites du NAT</title>
+
+      <para>Il existe quatre <emphasis role="bold">limites</emphasis> du mode 
+      NAT dont l'utilisateur devrait être conscient :</para>
+
+      <glosslist>
+        <glossentry>
+          <glossterm>Limite du protocole ICMP :</glossterm>
+
+          <glossdef>
+            <para>Certains outils de débogage réseau fréquemment utilisés (tels
+            que <computeroutput>ping</computeroutput> ou tracerouting) utilisent 
+            le protocole ICMP pour envoyer/recevoir des messages. Si le support
+            d'ICMP a été amélioré avec VirtualBox 2.1 (<computeroutput>ping</computeroutput> 
+            devrait maintenant fonctionner), il se peut que d'autres outils ne 
+            fonctionnent pas de façon fiable.</para>
+          </glossdef>
+        </glossentry>
+
+        <glossentry>
+          <glossterm>La réception de broadcasts (diffusion de messages) UDP n'est pas fiable :</glossterm>
+
+          <glossdef>
+            <para>L'invité ne reçoit pas de façon fiable les broadcasts puisque, pour économiser des ressources, il n'écoute qu'un certain temps après que l'invité ait envoyé des données UDP sur un port particulier. Par conséquent, la résolution de nom NetBios basée sur les broadcasts ne fonctionne pas toujours (mais WINS fonctionne toujours). Vous pouvez utiliser, en contournement, l'IP numérique du serveur désiré noté
+            <computeroutput>\\server\share</computeroutput>.</para>
+          </glossdef>
+        </glossentry>
+
+        <glossentry>
+          <glossterm>Les protocoles tels que GRE ne sont pas supportés :</glossterm>
+
+          <glossdef>
+            <para>Les protocoles autres que TCP et UDP ne sont pas supportés. 
+            Cela signifie que certains produits VPN (par exemple PPTP de 
+            Microsoft) ne peuvent pas être utilisés. Il y a d'autres produits 
+            VPN qui utilisent simplement TCP ou UDP.</para>
+          </glossdef>
+        </glossentry>
+
+        <glossentry>
+          <glossterm>Redirection des ports de l'hôte  &lt; 1024 impossible :</glossterm>
+
+          <glossdef>
+            <para>Sur les hôtes basés sur Unix (comme Linux, Solaris, Mac OS X)
+            il n'est pas possible de solliciter des ports inférieurs à 1024 
+            depuis des applications non lancées par <computeroutput>root</computeroutput>.
+            Il en résulte que si vous essayez de configurer une telle redirection 
+            de ports, la VM refusera de démarrer.</para>
+          </glossdef>
+        </glossentry>
+      </glosslist>
+
+      <para>Ces limitations ne devraient normalement pas perturber l'utilisation
+      standard du réseau. Mais la présence du NAT a aussi des effets subtils qui 
+      peuvent interagir avec des protocoles qui, normalement, fonctionnent. NFS
+      est un exemple où le serveur est souvent configuré pour refuser les 
+      connexions provenant de ports non privilégiés (c'est-à-dire des ports non
+      inférieurs à 1024).</para>
+    </sect2>
+  </sect1>
+
+  <sect1>
+    <title id="network_bridged">Réseau bridgé</title>
+
+    <para>Avec le réseau bridgé, VirtualBox utilise un pilote de périphérique de 
+    votre système <emphasis>hôte</emphasis> qui filtre les données depuis 
+    l'adaptateur de votre réseau physique. Ce pilote est donc appelé un pilote 
+    « net filter » (filtre de réseau). Ceci permet à VirtualBox d'intercepter 
+    des données du réseau physique et d'injecter des données dedans, créant de 
+    fait une nouvelle interface réseau logicielle. Quand un invité utilise une 
+    telle nouvelle interface logicielle, le système hôte voit l'invité comme si
+    il était physiquement connectés à l'interface par un câble réseau : l'hôte 
+    peut envoyer des données à l'invité par cette interface et reçoit des données 
+    à partir d'elle. Cela signifie que vous pouvez régler un routage ou un pont
+    entre l'invité et le reste de votre réseau.</para>
+
+    <para>Pour que cela fonctionne, VirtualBox a besoin d'un pilote de 
+    périphérique sur votre système hôte. La façon dont fonctionne le réseau 
+    bridgé a été entièrement réécrite avec VirtualBox 2.0 et 2.1, selon le 
+    système d'exploitation hôte.<footnote>
+        <para>Pour les hôtes Mac OS X et Solaris, les pilotes net filter étaient
+        déjà ajoutés à VirtualBox 2.0 (en tant que support dès le départ pour 
+        Host Interface Networking (réseau par interface hôte) sur ces plateformes). 
+        Avec VirtualBox 2.1, les pilotes net filter ont également été ajoutés
+        pour les hôtes Windows et Linux, en remplaçant les mécanismes présents
+        auparavant dans VirtualBox pour ces plateformes ; surtout sur Linux, la
+        méthode plus récente sous Linux exigeait de créer des interfaces et
+        des ponts (bridge) TAP, ce qui était complexe et ce qui changeait d'une
+        
+        distribution à l'autre. Rien de tout cela n'est nécessaire aujourd'hui.
+        Le réseau bridgé s'appelait avant « Host Interface Networking » (réseau
+        avec interface de l'hôte), et il a été renommé dans la version 2.2 sans
+        modification de son fonctionnement.</para>
+      </footnote></para>
+
+    <para><note>
+        <para>Même si TAP n'est plus nécessaire sur Linux avec le réseau bridgé, 
+        vous <emphasis>pouvez</emphasis> toujours utiliser des interfaces TAP 
+        pour certains réglages avancés, puisque vous pouvez connecter une VM à 
+        n'importe quelle interface hôte -- ce qui pourrait aussi être une 
+        interface TAP.</para>
+      </note>Pour activer le réseau bridgé, tout ce que vous avez besoin de 
+      faire est d'ouvrir la boîte de dialogue Paramètres de la fenêtre d'une 
+      machine virtuelle, aller sur la page « Réseau » et sélectionner « Réseau 
+      bridgé » dans la liste déroulante du champ « Attaché à ». Enfin, 
+      sélectionnez l'interface hôte désirée depuis la liste au bas de la page, 
+      qui contient les interfaces réseau physiques de vos systèmes. Sur un 
+      MacBook typique, par exemple, cela vous permettra de choisir entre « en1: 
+      AirPort » (qui est l'interface tans fil) et  « en0: Ethernet », qui 
+      représente l'interface avec un câble réseau.</para>
+
+    <para>En fonction de votre système d'exploitation hôte, vous devriez garder
+    à l'esprit les limites suivantes :<itemizedlist>
+        <listitem>
+          <para>Sur des hôtes <emphasis role="bold">Macintosh</emphasis>, la 
+          fonctionnalité est limitée quand on utilise AirPort (le réseau sans 
+          fil de Mac) pour le réseau bridgé. Actuellement, VirtualBox ne supporte 
+          que l'IPv4 via AirPort. Pour d'autres protocoles tels qu'IPv6 et IPX,
+          vous devez choisir une interface filaire.</para>
+        </listitem>
+
+        <listitem>
+          <para>Sur les hôtes <emphasis role="bold">Linux</emphasis>, la 
+          fonctionnalité est limitée lors de l'utilisation d'interfaces sans 
+          fil pour le réseau bridgé. VirtualBox ne supporte actuellement que 
+          l'IPv4 via le sans fil. Pour les autres protocoles tels que IPv6 et 
+          IPX, vous devez choisir une interface filaire.</para>
+
+          <para>En outre, régler le MTU à moins de 1500 bytes sur les interfaces 
+          filaires fournies par le pilote sky2 sur la Marvell Yukon II EC Ultra
+          Ethernet NIC est connu pour entraîner des pertes de paquets dans 
+          certaines conditions.</para>
+        </listitem>
+
+        <listitem>
+          <para>Sur les hôtes <emphasis role="bold">Solaris</emphasis>, il n'y 
+          a pas de support pour utiliser les interfaces sans fil. Le filtrage du 
+          trafic invité en utilisant IPFilter n'est pas non plus totalement 
+          supporté du fait de restrictions techniques du sous-système de réseau
+          de Solaris 11.</para>
+
+          <para>Avec VirtualBox 2.0.4 et supérieur, il est possible d'utiliser
+          des interfaces réseaux virtuelles Crossbow (Crossbow Virtual Network 
+          Interfaces, VNICs) avec le réseau bridgé, mais avec les précautions 
+          suivantes :</para>
+
+          <itemizedlist>
+            <listitem>
+              <para>Vous ne pouvez pas partager un VNIC entre plusieurs interfaces 
+              réseau virtuelles, ainsi chaque interface réseau invité doit avoir 
+              son propre VNIC.</para>
+            </listitem>
+
+            <listitem>
+              <para>La VNIC et l'interface réseau de l'invité qui utilise le VNIC 
+              doivent se voir assigner des adresses MAC.</para>
+            </listitem>
+          </itemizedlist>
+
+          <para>Lors de l'utilisation des interfaces VLAN avec VirtualBox, elles
+          doivent être nommées selon le schéma de nommage du hack PPA (comme 
+          "e1000g513001"), car sinon, il se peut que l'invité reçoive des paquets
+          sous un format inattendu.</para>
+        </listitem>
+      </itemizedlist></para>
+  </sect1>
+
+  <sect1 id="network_internal">
+    <title>Réseau interne</title>
+
+    <para>Le réseau interne est similaire au réseau bridgé dans le sens où la 
+    VM peut communiquer directement avec le monde extérieur. Cependant le 
+    « monde extérieur » est limité aux autres VMs qui se connectent au même 
+    réseau interne.</para>
+
+    <para>Même si techniquement, tout ce que vous pouvez faire en utilisant le 
+    réseau interne est aussi faisable en utilisant le réseau bridgé, il y a des
+    avantages en matière de sécurité à utiliser le réseau interne. En mode 
+    réseau bridgé, tout le trafic passe par une interface physique du système 
+    hôte. Il est donc possible d'attacher un détecteur de paquets (tel que 
+    Wireshark) à l'interface hôte et d'enregistrer tout le trafic qui passe par
+    lui. Si, pour une raison quelconque, vous préférez que deux ou davantage de
+    VMs de la même machine communiquent de façon privée, tout en cachant leurs 
+    données à la fois au système hôte et à et à l'utilisateur, le réseau bridgé
+    n'est donc pas une option.</para>
+
+    <para>Les réseaux internes sont créés automatiquement selon les besoins, 
+    ainsi il n'y a pas de configuration centrale. Chaque réseau interne est 
+    simplement identifié par son nom. Une fois qu'il y a plus d'une carte réseau 
+    virtuelle active avec le même ID de réseau interne, le pilote de support de
+    VirtualBox va automatiquement « brancher » les cartes et agir comme un 
+    switch réseau. Le pilote du support de VirtualBox implémente une switch 
+    Ethernet complet et supporte à la fois les trames broadcast/multicast et le
+    mode promiscuité.</para>
+
+    <para>Afin d'attacher la carte réseau d'une machine virtuelle à un réseau 
+    interne, réglez son mode réseau sur « réseau interne ». Il y a deux façons 
+    d'accomplir cela :</para>
+
+    <para><itemizedlist>
+        <listitem>
+          <para>Vous pouvez utiliser la boîte de dialogue « Paramètres » de la 
+          VM dans l'interface graphique. Dans la catégorie « Réseau » de la 
+          boîte de dialogue des paramètres, sélectionnez « Réseau interne » dans 
+          la liste déroulante des modes réseau. Maintenant, sélectionnez le nom 
+          d'un réseau interne existant depuis le menu déroulant en-dessous ou 
+          entrez un nouveau nom dans le champ d'édition.</para>
+        </listitem>
+
+        <listitem>
+          <para>Vous pouvez utiliser <screen>VBoxManage modifyvm "nom VM" --nic&lt;x&gt; intnet</screen>
+          Vous pouvez éventuellement spécifier un nom de réseau avec la commande
+          <screen>VBoxManage modifyvm "nom VM" --intnet&lt;x&gt; "network name"</screen>
+          Si vous ne spécifiez pas de nom de réseau, la carte réseau sera 
+          attachée au réseau <computeroutput>intnet</computeroutput> par défaut.</para>
+        </listitem>
+      </itemizedlist></para>
+
+    <para>Sauf si vous configurez les cartes réseau (virtuelles) des systèmes 
+    d'exploitation invités qui participent au réseau interne pour utiliser des 
+    adresses IP statiques, il se peut que vous vouliez utiliser le serveur DHCP 
+    construit dans VirtualBox pour gérer les adresses IP pour le réseau interne. 
+    Merci de voir le <xref linkend="vboxmanage-dhcpserver" /> pour des détails.</para>
+
+    <para>Par mesure de sécurité, l'implémentation Linux du réseau interne 
+    n'autorise que les VMs en fonction sous le même ID utilisateur à établir un
+    réseau interne.</para>
+  </sect1>
+
+  <sect1 id="network_hostonly">
+    <title>Réseau privé avec l'hôte (Host-only)</title>
+
+    <para>Le réseau privé avec l'hôte est un autre mode réseau qui a été ajouté
+    avec la version  2.2 de VirtualBox. On peut le concevoir comme un hybride 
+    entre les modes réseau bridgé et interne : comme avec le réseau bridgé, les
+    machines virtuelles peuvent se parler entre elles et avec l'hôte comme si 
+    elles étaient connectées sur un switch ethernet physique. De la même façon, 
+    comme avec le réseau interne cependant, il n'est pas besoin qu'une interface
+    réseau physique soit présente et les machines virtuelles ne peuvent pas 
+    parler au monde extérieur à l'hôte puisqu'elles ne sont pas connectées à une 
+    interface réseau physique.</para>
+
+    <para>Quand on utilise le réseau privé avec l'hôte, VirtualBox crée à la 
+    place une nouvelle interface logicielle sur l'hôte qui apparaît ensuite à 
+    côté de vos interfaces réseau existantes. En d'autres termes, alors qu'avec
+    un réseau bridgé, on utilise une interface réseau existante pour y attacher 
+    les machines virtuelles, avec le mode hôte privé on crée une nouvelle 
+    interface « loopback » sur l'hôte. Et alors qu'avec le réseau interne, on ne 
+    peut pas voir le trafic entre les machines virtuelles, on peut intercepter 
+    le trafic sur l'interface « loopback » de l'hôte.</para>
+
+    <para>Le réseau avec hôte privé est particulièrement utile pour les 
+    applications virtuelles pré-configurées, où plusieurs machines virtuelles 
+    sont emballées ensembles et destinées à coopérer. Par exemple, il se peut 
+    qu'une machine virtuelle contienne un serveur Web et la seconde une base de
+    données, et puisqu'elles sont prévues pour se parler, l'application peut 
+    demander à VirtualBox de régler un réseau avec hôte privé pour les deux. Un
+    second réseau (bridgé) connecterait alors le serveur Web au monde extérieur
+    pour donner accès aux données, mais le monde extérieur ne peut pas se connecter à la base de données.</para>
+
+    <para>Pour passer l'interface réseau de la machine virtuelle en mode « avec
+    hôte privé » :<itemizedlist>
+        <listitem>
+          <para>soit allez sur la page « réseau » dans les paramètres de la 
+          machine virtuelle dans l'interface graphique et sélectionnez « Hôte 
+          privé » ou</para>
+        </listitem>
+
+        <listitem>
+          <para>en ligne de commande, tapez 
+          <computeroutput>VBoxManage modifyvm "nom VM" --nic&lt;x&gt; hostonly</computeroutput> ; 
+          voir le <xref linkend="vboxmanage-modifyvm" /> pour les détails.</para>
+        </listitem>
+      </itemizedlist></para>
+
+    <para>Pour le réseau privé avec hôte, comme avec le réseau interne, il se 
+    peut que vous trouviez le serveur DHCP construit dans VirtualBox utile. On 
+    peut l'activer puis gérer les adresses IP dynamiques dans le réseau avec 
+    hôte privé puisque sinon vous devriez configurer toutes les adresses IP de 
+    manière statique.<itemizedlist>
+        <listitem>
+          <para>Dans l'interface graphique de VirtualBox, vous pouvez configurer 
+          toutes ces options dans les paramètres globaux avec « Fichier »
+          -&gt; « Paramètres » -&gt; « Réseau », qui liste tous les réseaux avec 
+          hôte privé présentement utilisés. Cliquez sur un nom de réseau puis 
+          sur le bouton « Éditer » à droite et vous pouvez modifier les paramètres 
+          de l'adaptateur et du DHCP.</para>
+        </listitem>
+
+        <listitem>
+          <para>Alternativement, vous pouvez utiliser <computeroutput>VBoxManage
+          dhcpserver</computeroutput> en ligne de commande ; voir le <xref
+          linkend="vboxmanage-dhcpserver" /> pour des détails.</para>
+        </listitem>
+      </itemizedlist></para>
+  </sect1>
+
+  <sect1 id="network_udp_tunnel">
+    <title>Réseau par tunnel UDP</title>
+
+    <para>Ce mode réseau permet de connecter entre elles des machines virtuelles 
+    en fonction sur plusieurs hôtes.
+    </para>
+
+    <para>Techniquement, cela se fait en encapsulant des cadres (frames) Ethernet 
+    envoyés ou reçus par la carte réseau invitée dans un chiffreur de données 
+    (data datagrams) UDP/IP, et en les envoyant à l'hôte à travers un réseau
+    disponible.
+    </para>
+
+    <para>Le mode Tunnel UDP prend trois paramètres :<glosslist>
+        <glossentry>
+          <glossterm>port UDP source</glossterm>
+
+          <glossdef>
+            <para>Le port sur lequel écoute l'hôte. Les déchiffreurs de données
+            arrivant sur ce port issus de n'importe quelle adresse source seront
+            redirigés vers la partie réceptrice d'une carte réseau invitée.</para>
+          </glossdef>
+        </glossentry>
+
+        <glossentry>
+          <glossterm>adresse de destination</glossterm>
+
+          <glossdef>
+            <para>L'adresse IP de l'hôte cible des données transmises.</para>
+          </glossdef>
+        </glossentry>
+
+        <glossentry>
+          <glossterm>Port UDP de destination</glossterm>
+
+          <glossdef>
+            <para>Numéro de port vers lequel sont envoyées les données transmises.</para>
+          </glossdef>
+        </glossentry>
+      </glosslist></para>
+
+    <para>Lorsqu'on connecte deux machines virtuelles sur deux hôtes différents,
+    leurs adresses IP doivent être échangées. Sur un hôte unique, les ports
+    sources et de destination doivent être échangés.</para>
+
+    <para>Dans l'exemple suivant, l'hôte 1 utilise l'adresse IP 10.0.0.1 et
+    l'hôte 2 utilise l'adresse IP 10.0.0.2. Configuration en ligne de commande :<screen>        VBoxManage modifyvm "VM 01 on host 1" --nic&lt;x&gt; generic
+        VBoxManage modifyvm "VM 01 on host 1" --nicgenericdrv&lt;x&gt; UDPTunnel
+        VBoxManage modifyvm "VM 01 on host 1" --nicproperty&lt;x&gt; dest=10.0.0.2
+        VBoxManage modifyvm "VM 01 on host 1" --nicproperty&lt;x&gt; sport=10001
+        VBoxManage modifyvm "VM 01 on host 1" --nicproperty&lt;x&gt; dport=10002</screen>
+      et <screen>        VBoxManage modifyvm "VM 02 on host 2" --nic&lt;y&gt; generic
+        VBoxManage modifyvm "VM 02 on host 2" --nicgenericdrv&lt;y&gt; UDPTunnel
+        VBoxManage modifyvm "VM 02 on host 2" --nicproperty&lt;y&gt; dest=10.0.0.1
+        VBoxManage modifyvm "VM 02 on host 2" --nicproperty&lt;y&gt; sport=10002
+        VBoxManage modifyvm "VM 02 on host 2" --nicproperty&lt;y&gt; dport=10001</screen>
+    </para>
+
+    <para>Bien entendu, vous pouvez connecter deux machines virtuelles sur le
+    même hôte en réglant le paramètre d'adresse de destination sur 127.0.0.1
+    sur les deux. Dans ce cas, il agira comme le « Réseau interne », mais
+    l'hôte peut voir le trafic réseau, ce qu'il ne pourrait pas faire en réseau
+    interne normal.</para>
+
+    <para><note>Sur les hôtes basés sur Unix (comme Linux, Solaris, Mac OS X), il
+    n'est pas possible de diriger (bind) sur des ports inférieurs à 1024, à partir
+    d'applications qui ne sont pas exécutées par <computeroutput>root</computeroutput>. 
+    Il s'en suit que si vous essayez de configurer un tel port source UDP, la
+    VM refusera de démarrer.</note></para>
+  </sect1>
+
+  <sect1 id="network_vde">
+    <title>Réseau VDE</title>
+
+
+    <para>Virtual Distributed Ethernet (Ethernet virtuel distribué, VDE<footnote><para>VDE 
+    est un projet développé par Renzo Davoli, professeur associé à l'Université
+    de Bologna en Italie.</para></footnote>) est une infrastructure réseau
+    virtuelle flexible, reliant plusieurs hôtes de manière sécurisée. Elle
+    permet de basculer entre L2/L3, y compris avec un protocole d'arborescence
+    de passerelles, entre VLANs et l'émulation WAN. C'est une partie facultative
+    de VirtualBox qui n'est incluse que dans code source.</para>
+
+    <para>Les blocs de construction de base de l'infrastructure sont des switches
+    VDE, des plugs (prises) VDE et des fils VDE, qui connectent les switches 
+    entre eux.</para>
+
+    <para>Le pilote VDE de VirtualBox prend un paramètre :<glosslist>
+        <glossentry>
+          <glossterm>Réseau VDE</glossterm>
+
+          <glossdef>
+            <para>Le nom du socket du switch du réseau VDE vers lequel se connectera
+            la VM.</para>
+          </glossdef>
+        </glossentry>
+      </glosslist></para>
+
+    <para>L'exemple de base suivant montre comment connecter une machine virtuelle
+    à un switch VDE :</para>
+
+    <para><orderedlist>
+        <listitem>
+          <para>Créez un switch VDE :
+          <screen>vde_switch -s /tmp/switch1</screen>
+          </para>
+        </listitem>
+        <listitem>
+          <para>Configuration en ligne de commande :
+          <screen>VBoxManage modifyvm "nom VM" --nic&lt;x&gt; generic</screen>
+          <screen>VBoxManage modifyvm "nom VM" --nicgenericdrv&lt;x&gt; VDE</screen>
+          Pour se connecter au port du switch automatiquement affecté, utilisez :
+          <screen>VBoxManage modifyvm "nom VM" --nicproperty&lt;x&gt; network=/tmp/switch1</screen>
+          Pour se connecter à un port spécifique du switch &lt;n&gt;, utilisez :
+          <screen>VBoxManage modifyvm "nom VM" --nicproperty&lt;x&gt; network=/tmp/switch1[&lt;n&gt;]</screen>
+          La dernière option peut être utile pour des VLANs.
+          </para>
+        </listitem>
+        <listitem>
+          <para>Plan facultatif entre un port de switch VDE et un VLAN : (du
+          switch en console)
+          <screen>vde$ vlan/create &lt;VLAN&gt;</screen>
+          <screen>vde$ port/setvlan &lt;port&gt; &lt;VLAN&gt;</screen>
+          </para>
+        </listitem>
+      </orderedlist></para>
+
+    <para>VDE n'est disponible que sur des hôtes Linux et FreeBSD. Il n'est
+    disponible que si le logiciel VDE et la bibliothèque du plugin VDE du projet
+      VirtualSquare sont installés sur le système hôte. Pour plus
+      d'informations sur le paramétrage des réseaux VDE, merci de voir la
+      documentation qui accompagne le logiciel.<footnote>
+    <para><ulink
+      url="http://wiki.virtualsquare.org/wiki/index.php/VDE_Basic_Networking">http://wiki.virtualsquare.org/wiki/index.php/VDE_Basic_Networking</ulink>.</para>
+    </footnote></para>
+  </sect1>
+
+  <sect1 id="network_bandwidth_limit">
+    <title>Limiting bandwidth for network I/O</title>
+
+    <para>Starting with version 4.2, VirtualBox allows for limiting the
+    maximum bandwidth used for network transmission. Several network adapters
+    of one VM may share limits through bandwidth groups. It is possible
+    to have more than one such limit.</para>
+
+    <para>Limits are configured through
+    <computeroutput>VBoxManage</computeroutput>. The example below creates a
+    bandwidth group named "Limit", sets the limit to 20 Mbit/s and assigns the
+    group to the first and second adapters of the VM:<screen>VBoxManage bandwidthctl "VM name" add Limit --type network --limit 20m
+VBoxManage modifyvm "VM name" --nicbandwidthgroup1 Limit
+VBoxManage modifyvm "VM name" --nicbandwidthgroup2 Limit</screen></para>
+
+    <para>All adapters in a group share the bandwidth limit, meaning that in the
+    example above the bandwidth of both adapters combined can never exceed 20
+    Mbit/s. However, if one adapter doesn't require bandwidth the other can use the
+    remaining bandwidth of its group.</para>
+
+    <para>The limits for each group can be changed while the VM is running,
+    with changes being picked up immediately. The example below changes the
+    limit for the group created in the example above to 100 Kbit/s:<screen>VBoxManage bandwidthctl "VM name" set Limit --limit 100k</screen></para>
+  </sect1>
+</chapter>
