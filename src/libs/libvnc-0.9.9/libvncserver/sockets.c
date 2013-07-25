@@ -173,7 +173,7 @@ rfbInitSockets(rfbScreenInfoPtr rfbScreen)
         }
 
         if (i >= 6000) {
-	    rfbLogPerror("Failure autoprobing");
+	    rfbLogPerror("IPv6 Failure autoprobing");
 	    return;
         }
 
@@ -864,6 +864,17 @@ rfbListenOnTCPPort(int port,
     return sock;
 }
 
+static int rfbIsIPv6Support()
+{
+	int s;
+	s = socket(AF_INET6, SOCK_STREAM, 0);
+	if (s > 0) {
+		close(s);
+		return 1;
+	}
+	return 0;
+}
+
 int
 rfbListenOnTCP6Port(int port,
                     const char* iface)
@@ -878,6 +889,9 @@ rfbListenOnTCP6Port(int port,
     struct addrinfo hints, *servinfo, *p;
     char port_str[8];
 
+	if (!rfbIsIPv6Support()) {
+		return -1;
+	}
     snprintf(port_str, 8, "%d", port);
 
     memset(&hints, 0, sizeof(hints));
