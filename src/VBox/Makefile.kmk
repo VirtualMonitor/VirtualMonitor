@@ -19,11 +19,13 @@ SUB_DEPTH = ../..
 include $(KBUILD_PATH)/subheader.kmk
 
 include $(PATH_SUB_CURRENT)/Additions/Makefile.kmk
+ifndef DRIVER_ONLY
 include $(PATH_SUB_CURRENT)/Runtime/Makefile.kmk
 ifeq ($(KBUILD_TARGET),linux)
 include $(PATH_SUB_CURRENT)/HostDrivers/Makefile.kmk
 endif
 # include $(PATH_SUB_CURRENT)/Frontends/Makefile.kmk
+endif
 
 include $(FILE_KBUILD_SUB_FOOTER)
 

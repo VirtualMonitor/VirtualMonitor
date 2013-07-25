@@ -21,7 +21,9 @@ include $(KBUILD_PATH)/subheader.kmk
 #include $(PATH_SUB_CURRENT)/bldprogs/Makefile.kmk
 include $(PATH_SUB_CURRENT)/libs/Makefile.kmk
 include $(PATH_SUB_CURRENT)/VBox/Makefile.kmk
+ifndef DRIVER_ONLY
 include $(PATH_SUB_CURRENT)/VirtualMonitor/Makefile.kmk
+endif
 
 include $(FILE_KBUILD_SUB_FOOTER)
 

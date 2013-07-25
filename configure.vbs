@@ -2254,6 +2254,7 @@ sub usage
    Print "  --with-openssl=PATH   "
    Print "  --with-libcurl=PATH   "
    Print "  --with-python=PATH    "
+   Print "  --driver-only   "
 end sub
 
 
@@ -2293,6 +2294,7 @@ Sub Main
    strOptMkisofs = ""
    blnOptDisableCOM = False
    blnOptDisableUDPTunnel = False
+   blnDriverOnly = False
    for i = 1 to Wscript.Arguments.Count
       dim str, strArg, strPath
 
@@ -2357,6 +2359,8 @@ Sub Main
             g_blnInternalMode = True
          case "--internal-last"
             g_blnInternalFirst = False
+		 case "--driver-only"
+		 	blnDriverOnly = True
          case "-h", "--help", "-?"
             usage
             Wscript.Quit(0)
@@ -2408,8 +2412,13 @@ Sub Main
    CfgPrint "VBOX_WITH_OPEN_WATCOM := " '' @todo look for openwatcom 1.9+
    EnvPrint "set PATH=%PATH%;" & g_strPath& "/tools/win." & g_strTargetArch & "/bin;" '' @todo look for yasm
    ' CheckForlibSDL strOptlibSDL
-   CheckForlibJPEG strOptlibJPEG
-   ConfigLibVnc 
+
+   if blnDriverOnly = True then
+      CfgPrint "DRIVER_ONLY := 1"
+   else
+      CheckForlibJPEG strOptlibJPEG
+      ConfigLibVnc 
+   end if
    ' Don't check for these libraries by default as they are part of OSE
    ' Using external libs can add a dependency to iconv
    ' if (strOptXml2 <> "") then
