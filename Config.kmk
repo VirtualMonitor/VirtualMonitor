@@ -190,13 +190,13 @@ endif
 #
 
 # Major version.
-VBOX_VERSION_MAJOR = 4
+VBOX_VERSION_MAJOR = 0
 # Minor version.
-VBOX_VERSION_MINOR = 2
+VBOX_VERSION_MINOR = 1
 # This is the current build number. It should be increased every time we publish a
 # new build. The define is available in every source file. Only even build numbers
 # will be published, odd numbers are set during development.
-VBOX_VERSION_BUILD = 6
+VBOX_VERSION_BUILD = 2
 # The raw version string. This *must not* contain any other information/fields than
 # major, minor and build revision (as it is now) -- also will be used for host/guest version
 # comparison.
@@ -219,9 +219,9 @@ ifeq ($(int-mod $(VBOX_VERSION_BUILD),2),0)
 endif
 
 # Some info on the vendor
-VBOX_VENDOR       = Oracle Corporation
-VBOX_VENDOR_SHORT = Oracle
-VBOX_PRODUCT      = Oracle VM VirtualBox
+VBOX_VENDOR       = VirtualMonitor Org 
+VBOX_VENDOR_SHORT = VirtualMonitor 
+VBOX_PRODUCT      = VirtualMonitor 
 # Not all could be done automatically. Here is a list of known places which
 # have to be updated manually, please keep this up to date:
 #	src/VBox/Devices/PC/PXE/client/uinit.asm

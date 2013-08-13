@@ -99,7 +99,7 @@
  *
  * @{ */
 #define VBOX_RC_COMPANY_NAME            VBOX_VENDOR
-#define VBOX_RC_LEGAL_COPYRIGHT         "Copyright (C) 2009-" VBOX_C_YEAR " Oracle Corporation\0"
+#define VBOX_RC_LEGAL_COPYRIGHT         "Copyright (C) 2013-" VBOX_C_YEAR " VirtualMonitor Org\0"
 #define VBOX_RC_PRODUCT_VERSION         VBOX_VERSION_MAJOR_NR , VBOX_VERSION_MINOR_NR , 0 , 0
 #define VBOX_RC_FILE_VERSION            VBOX_VERSION_MAJOR_NR , VBOX_VERSION_MINOR_NR , 0 , 0
 /** @} */
