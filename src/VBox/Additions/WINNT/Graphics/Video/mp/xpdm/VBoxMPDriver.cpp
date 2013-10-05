@@ -54,7 +54,7 @@ VBoxDrvFindAdapter(IN PVOID HwDeviceExtension, IN PVOID HwContext, IN PWSTR Argu
     PHYSICAL_ADDRESS phVRAM = {0};
     ULONG ulApertureSize = 0;
 
-    PAGED_CODE();
+    // PAGED_CODE();
     LOGF_ENTER();
 
     /* Init video port api */
@@ -172,7 +172,7 @@ VBoxDrvInitialize(PVOID HwDeviceExtension)
     PVBOXMP_DEVEXT pExt = (PVBOXMP_DEVEXT) HwDeviceExtension;
     USHORT DispiId;
 
-    PAGED_CODE();
+    // PAGED_CODE();
     LOGF_ENTER();
 
     /* Initialize the request pointer. */
@@ -227,7 +227,7 @@ VBoxDrvStartIO(PVOID HwDeviceExtension, PVIDEO_REQUEST_PACKET RequestPacket)
     PSTATUS_BLOCK  pStatus = RequestPacket->StatusBlock;
     BOOLEAN        bResult = FALSE;
 
-    PAGED_CODE();
+    // PAGED_CODE();
 
     LOGF(("IOCTL %#p, fn(%#x)", (void*)RequestPacket->IoControlCode, (RequestPacket->IoControlCode >> 2) & 0xFFF));
 
@@ -578,7 +578,7 @@ VBoxDrvStartIO(PVOID HwDeviceExtension, PVIDEO_REQUEST_PACKET RequestPacket)
 static VP_STATUS
 VBoxDrvSetPowerState(PVOID HwDeviceExtension, ULONG HwId, PVIDEO_POWER_MANAGEMENT VideoPowerControl)
 {
-    PAGED_CODE();
+    // PAGED_CODE();
     LOGF_ENTER();
 
     /*Not implemented*/
@@ -591,7 +591,7 @@ VBoxDrvSetPowerState(PVOID HwDeviceExtension, ULONG HwId, PVIDEO_POWER_MANAGEMEN
 static VP_STATUS
 VBoxDrvGetPowerState(PVOID HwDeviceExtension, ULONG HwId, PVIDEO_POWER_MANAGEMENT VideoPowerControl)
 {
-    PAGED_CODE();
+    // PAGED_CODE();
     LOGF_ENTER();
 
     /*Not implemented*/
@@ -608,7 +608,7 @@ VBoxDrvGetVideoChildDescriptor(PVOID HwDeviceExtension, PVIDEO_CHILD_ENUM_INFO C
 {
     PVBOXMP_DEVEXT pExt = (PVBOXMP_DEVEXT) HwDeviceExtension;
 
-    PAGED_CODE();
+    // PAGED_CODE();
     LOGF_ENTER();
 
     if (ChildEnumInfo->ChildIndex>0)
@@ -708,7 +708,7 @@ VBoxDrvInterrupt(PVOID  HwDeviceExtension)
 /* Video Miniport Driver entry point */
 ULONG DriverEntry(IN PVOID Context1, IN PVOID Context2)
 {
-    PAGED_CODE();
+    // PAGED_CODE();
 
 #if 0
     int irc = RTR0Init(0);

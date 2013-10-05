@@ -22,7 +22,7 @@ static VP_STATUS
 VBoxMPQueryNamedValueCB(PVOID HwDeviceExtension, PVOID Context,
                         PWSTR ValueName, PVOID ValueData, ULONG ValueLength)
 {
-    PAGED_CODE();
+    // PAGED_CODE();
 
     if (!ValueLength || !Context)
     {

@@ -24,7 +24,7 @@
 '*****************************************************************************
 '* Global Variables                                                          *
 '*****************************************************************************
-dim g_strPath, g_strEnvFile, g_strLogFile, g_strCfgFile, g_strShellOutput
+dim g_strPath, g_strEnvFile, g_strLogFile, g_strCfgFile, g_strShellOutput, g_strPathVCCommon, g_strPathVC 
 g_strPath = Left(Wscript.ScriptFullName, Len(Wscript.ScriptFullName) - Len("\configure.vbs"))
 g_strEnvFile = g_strPath & "\env.bat"
 g_strCfgFile = g_strPath & "\AutoConfig.kmk"
@@ -1113,6 +1113,8 @@ sub CheckForVisualCPP(strOptVC, strOptVCCommon, blnOptVCExpressEdition)
    if strPathVCCommon <> "" then
       EnvPrint "set PATH=%PATH%;" & strPathVCCommon & "/IDE;"
       EnvPrint "set PATH=%PATH%;" & strPathVC & "/bin;"
+	  g_strPathVCCommon = strPathVCCommon
+	  g_strPathVC = strPathVC 
    end if
 end sub
 
@@ -2257,7 +2259,47 @@ sub usage
    Print "  --driver-only   "
 end sub
 
+Sub CopyAllFile(SrcDir, DstDir)
+   SrcDir=DosSlashes(SrcDir)
+   DstDir=DosSlashes(DstDir)
+   Print DstDir
+   Set fso = CreateObject("Scripting.FileSystemObject")
+   arr = split(DstDir, "\")
+   path = ""
+   For Each dir In arr
+     If path <> "" Then path = path & "\"
+     path = path & dir
+     If fso.FolderExists(path) = False Then fso.CreateFolder(path)
+   Next
+   set source=fso.getFolder(DosSlashes(SrcDir))
+   set target=fso.getFolder(DosSlashes(DstDir))
 
+   for each file in source.files
+       Print "Copying " &  file & " to " & DstDir 
+       fso.copyFile file, DstDir & fso.GetFileName(file), True
+   next
+   Set fso = Nothing
+end sub
+
+sub CopyXPDMSource
+   dim src, dst
+   src = g_strPath & "/src/VBox/Additions/WINNT/Graphics/Video/mp/xpdm"
+   dst = g_strPath & "/out/nmake/xpdm/"
+    
+   CopyAllFile src, dst
+   src = g_strPath & "/src/VBox/Additions/WINNT/Graphics/Video/mp/common"
+   CopyAllFile src, dst
+end sub
+
+sub ConfigXPDM
+   dim cfg
+   cfg = g_strPath & "/out/nmake/xpdm/sources.inc"
+   FileDelete cfg
+   FileAppendLine cfg, "PATH_ROOT=" & g_strPath
+   FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & g_strPathVC & "/include;"
+   FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & "$(PATH_ROOT)/src/VBox/Additions/WINNT/Graphics/Video/mp;"
+   FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & "$(PATH_ROOT)/src/VBox/Additions/WINNT/Graphics/Video;"
+end sub
 ''
 ' The main() like function.
 '
@@ -2295,6 +2337,7 @@ Sub Main
    blnOptDisableCOM = False
    blnOptDisableUDPTunnel = False
    blnDriverOnly = False
+   blnNmake = False
    for i = 1 to Wscript.Arguments.Count
       dim str, strArg, strPath
 
@@ -2360,6 +2403,9 @@ Sub Main
          case "--internal-last"
             g_blnInternalFirst = False
 		 case "--driver-only"
+		 	blnDriverOnly = True
+		 case "--nmake"
+		 	blnNmake = True
 		 	blnDriverOnly = True
          case "-h", "--help", "-?"
             usage
@@ -2440,12 +2486,26 @@ Sub Main
       EnvPrint "call " & g_strPathDev & "/env.cmd %1 %2 %3 %4 %5 %6 %7 %8 %9"
    end if
 
+   if blnNmake = True then
+	  CopyXPDMSource
+	  ConfigXPDM
+      g_strEnvFile = g_strPath & "\out\nmake\xpdm" & "\env.bat"
+      EnvInit
+      EnvPrint "set PATH=" & g_strPathVCCommon & "/IDE;%PATH%;"
+      EnvPrint "set PATH=" & g_strPathVC & "/bin;%PATH%;"
+   Print ""
+   Print "Open DDK Build shell then enter out\nmake\xpdm directory"
+   Print "Execute env.bat once before you start to build driver using nmake:"
+   Print "  env.bat"
+   Print " nmake"
+   else
    Print ""
    Print "Execute env.bat once before you start to build VBox:"
    Print ""
    Print "  env.bat"
    Print "  kmk"
    Print ""
+   end if
 
 End Sub
 
