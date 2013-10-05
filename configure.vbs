@@ -2489,14 +2489,12 @@ Sub Main
    if blnNmake = True then
 	  CopyXPDMSource
 	  ConfigXPDM
-      g_strEnvFile = g_strPath & "\out\nmake\xpdm" & "\env.bat"
-      EnvInit
-      EnvPrint "set PATH=" & g_strPathVCCommon & "/IDE;%PATH%;"
-      EnvPrint "set PATH=" & g_strPathVC & "/bin;%PATH%;"
+      'g_strEnvFile = g_strPath & "\out\nmake\xpdm" & "\env.bat"
+      'EnvInit
+      'EnvPrint "set PATH=" & g_strPathVCCommon & "/IDE;%PATH%;"
+      'EnvPrint "set PATH=" & g_strPathVC & "/bin;%PATH%;"
    Print ""
    Print "Open DDK Build shell then enter out\nmake\xpdm directory"
-   Print "Execute env.bat once before you start to build driver using nmake:"
-   Print "  env.bat"
    Print " nmake"
    else
    Print ""

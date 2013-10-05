@@ -19,7 +19,7 @@
 #include "VBoxMPInternal.h"
 #include <VBox/VBoxVideo.h>
 #include <VBox/VBoxGuestLib.h>
-#include <iprt/asm.h>
+// #include <iprt/asm.h>
 
 typedef struct _VBVAMINIPORT_CHANNELCONTEXT
 {
@@ -464,6 +464,7 @@ static void VBoxMPSignalEvent(PVBOXMP_COMMON pCommon, uint64_t pvEvent)
 static DECLCALLBACK(int)
 VBoxVbvaChannelGenericHandlerCB(void *pvHandler, uint16_t u16ChannelInfo, void *pvBuffer, HGSMISIZE cbBuffer)
 {
+#if 0
     VBVA_CHANNELCONTEXTS *pCallbacks = (VBVA_CHANNELCONTEXTS*)pvHandler;
     LOGF_ENTER();
 
@@ -585,6 +586,7 @@ VBoxVbvaChannelGenericHandlerCB(void *pvHandler, uint16_t u16ChannelInfo, void *
 
     /* no handlers were found, need to complete the command here */
     VBoxHGSMIHostCmdComplete(&pCallbacks->pCommon->hostCtx, pvBuffer);
+#endif
     return VINF_SUCCESS;
 }
 

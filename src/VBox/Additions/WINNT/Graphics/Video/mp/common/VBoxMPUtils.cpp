@@ -39,12 +39,14 @@ int g_bVBoxVDbgBreakFv = false;
 #endif
 #endif
 
+#if 0
 #pragma alloc_text(PAGE, VBoxQueryWinVersion)
 #pragma alloc_text(PAGE, VBoxGetHeightReduction)
 #pragma alloc_text(PAGE, VBoxLikesVideoMode)
 #pragma alloc_text(PAGE, VBoxQueryDisplayRequest)
 #pragma alloc_text(PAGE, VBoxQueryHostWantsAbsolute)
 #pragma alloc_text(PAGE, VBoxQueryPointerPos)
+#endif
 
 /*Returns the windows version we're running on*/
 vboxWinVersion_t VBoxQueryWinVersion()
