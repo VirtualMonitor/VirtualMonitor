@@ -1,3 +1,35 @@
+/******************************************************************************
+  Child Enumeration Process (Source WinDDK)
+
+The following sequence of steps describes how the display port driver, display miniport driver, and video present network (VidPN) manager collaborate at
+initialization time to enumerate child devices of a display adapter.
+
+1) The display port driver calls the display miniport driver's DxgkDdiStartDevice function.
+DxgkDdiStartDevice returns (in the NumberOfChildren parameter) the number of devices that are (or could become by docking) children
+of the display adapter. DxgkDdiStartDevice also returns (in the NumberOfVideoPresentSources parameter) the number N of video present
+sources supported by the display adapter. Those video present sources will subsequently be identified by the numbers 0, 1, ... N -1.
+2) The display port driver calls the display miniport driver's DxgkDdiQueryChildRelations function, which enumerates child devices
+of the display adapter. DxgkDdiQueryChildRelations fills in an array of DXGK_CHILD_DESCRIPTOR structures: one for each child device.
+Note that all child devices of the display adapter are on-board: monitors and other external devices that connect to the display adapter
+are not considered child devices.
+3) For each child device (enumerated as described in Step 1) that has an HPD awareness value of HpdAwarenessInterruptible or HpdAwarenessPolled,
+the display port driver calls the display miniport driver's DxgkDdiQueryChildStatus function to determine whether the child device has
+an external device connected to it.
+4) The display port driver creates a PDO for each child device that satisfies one of the following conditions:
+--> The child device has an HPD awareness value of HpdAwarenessAlwaysConnected.
+-->The child device has an HPD awareness value of HpdAwarenessPolled or HpdAwarenessInterruptible, and the operating system knows from
+a previous query or notification that the child device has an external device connected.
+5) The display port driver calls the display miniport driver's DxgkDdiQueryDeviceDescriptor function for each child device that satisfies
+one of the following conditions:
+-->The child device is known to have an external device connected.
+-->The child device is assumed to have an external device connected.
+--> The child device has a type of TypeOther.
+6) The VidPN manager obtains identifiers for all of the video present sources and video present targets supported by the display adapter.
+The video present sources are identified by the numbers 0, 1, ... N - 1, where N is the number of sources returned by the display miniport
+driver's DxgkDdiStartDevice function. The video present targets have unique integer identifiers that were previously created by the display miniport
+driver during DxgkDdiQueryChildRelations. Each child device of type TypeVideoOutput is associated with a video present target,
+and the ChildUid member of the child device's DXGK_CHILD_DESCRIPTOR structure is used as the identifier for the video present target.
+*******************************************************************************/
 #include "Driver.h"
 #include <Dispmprt.h.>
 
@@ -420,15 +452,17 @@ NTSTATUS justkernAddDevice(
     return Status;
 }
 
-/**
- *******************************************************************************
+/********************************************************************************
  @brief	    justkernStartDevice
  @remark     function prepares a display adapter to receive I/O requests,
- Explicitly increase the number of child and sources.
+ Explicitly increase the number of child and sources.The display port driver calls the display
+ miniport driver's DxgkDdiStartDevice function. DxgkDdiStartDevice returns (in the NumberOfChildren parameter)
+ the number of devices that are (or could become by docking) children of the display adapter.
+ DxgkDdiStartDevice also returns (in the NumberOfVideoPresentSources parameter) the number N of video present
+ sources supported by the display adapter. Those video present sources will subsequently be identified by the numbers 0, 1, ... N -1.
  @param[in]  PDXGK_START_INFO DxgkStartInfo
  @return     STATUS_SUCCESS or STATUS_UNSUCCESSFUL. For more detailed failure info
- *******************************************************************************
- */
+ ********************************************************************************/
 NTSTATUS
 justkernStartDevice(IN PVOID MiniportDeviceContext, IN PDXGK_START_INFO DxgkStartInfo, IN PDXGKRNL_INTERFACE DxgkInterface,
                     OUT PULONG NumberOfVideoPresentSources, OUT PULONG NumberOfChildren)
@@ -512,14 +546,17 @@ NTSTATUS justkernD3DDDIQueryAdapterInfo( VOID *InterfaceContext,CONST DXGKARG_QU
     return Status;
 }
 
-/**
- *******************************************************************************
+/********************************************************************************
  @brief	    justkernQueryChildRelations
- @remark     function enumerates the child devices of a display adapter
+ @remark     function enumerates the child devices of a display adapter.
+ The display port driver calls the display miniport driver's DxgkDdiQueryChildRelations function,
+ which enumerates child devices of the display adapter. DxgkDdiQueryChildRelations fills in an array of
+ DXGK_CHILD_DESCRIPTOR structures: one for each child device. Note that all child devices of the
+ display adapter are on-board: monitors and other external devices that connect to the display adapter are not
+ considered child devices.
  @param[in]  PVOID pvMiniportDeviceContext
  @return     STATUS_SUCCESS or STATUS_UNSUCCESSFUL. For more detailed failure info
- *******************************************************************************
- */
+ ********************************************************************************/
 NTSTATUS justkernQueryChildRelations(IN PVOID pvMiniportDeviceContext,IN OUT PDXGK_CHILD_DESCRIPTOR pChildRelations,IN ULONG ChildRelationsSize )
 {
     PDEVICE_EXTENSION *ppExtensionArray = (PDEVICE_EXTENSION*)pvMiniportDeviceContext;
@@ -558,7 +595,11 @@ NTSTATUS justkernQueryChildRelations(IN PVOID pvMiniportDeviceContext,IN OUT PDX
     }
     return Status;
 }
-
+/****************************************************************************************************
+@Explaination: For each child device (enumerated as described in Step 1) that has an HPD awareness value of HpdAwarenessInterruptible
+or HpdAwarenessPolled, the display port driver calls the display miniport driver's DxgkDdiQueryChildStatus function to
+determine whether the child device has an external device connected to it.
+ ****************************************************************************************************/
 NTSTATUS justkernQueryChildStatus( IN PVOID MiniportDeviceContext, IN PDXGK_CHILD_STATUS ChildStatus,IN BOOLEAN NonDestructiveOnly )
 {
     NTSTATUS  (*justkernQueryChildStatus_ptr)(IN PVOID ,IN PDXGK_CHILD_STATUS ,IN BOOLEAN );
@@ -581,7 +622,13 @@ VOID justkernDpcRoutine(PVOID MiniportDeviceContext)
     memcpy(&justkernDpcRoutine_ptr,&Primary_Structure_Address.DxgkDdiDpcRoutine,4);
     (*justkernDpcRoutine_ptr)(MiniportDeviceContext );
 }
-
+/******************************************************************************************************
+The display port driver calls the display miniport driver's DxgkDdiQueryDeviceDescriptor function for each child device
+that satisfies one of the following conditions:
+-->The child device is known to have an external device connected.
+-->The child device is assumed to have an external device connected.
+-->The child device has a type of TypeOther.
+*******************************************************************************************************/
 NTSTATUS justkernQueryDeviceDescriptor( IN_CONST_PVOID MiniportDeviceContext,IN_ULONG ChildUid,INOUT_PDXGK_DEVICE_DESCRIPTOR DeviceDescriptor )
 {
     NTSTATUS (*justkernQueryDeviceDescriptor_ptr)(IN_CONST_PVOID ,IN_ULONG ,INOUT_PDXGK_DEVICE_DESCRIPTOR  );
