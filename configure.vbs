@@ -2296,7 +2296,7 @@ sub ConfigXPDM
    cfg = g_strPath & "/out/nmake/xpdm/sources.inc"
    FileDelete cfg
    FileAppendLine cfg, "PATH_ROOT=" & g_strPath
-   'FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & g_strPathVC & "/include;"
+   FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & g_strPathVC & "/include;"
    FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & "$(PATH_ROOT)/src/VBox/Additions/WINNT/Graphics/Video/mp;"
    FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & "$(PATH_ROOT)/src/VBox/Additions/WINNT/Graphics/Video;"
 end sub
