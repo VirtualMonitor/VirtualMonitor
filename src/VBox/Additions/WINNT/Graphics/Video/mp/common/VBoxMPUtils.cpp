@@ -20,7 +20,18 @@
 
 #ifdef VBOX_XPDM_MINIPORT
 RT_C_DECLS_BEGIN
+#ifdef VBOX
 # include <ntddk.h>
+#else
+#include <ntdef.h>
+DECLSPEC_IMPORT BOOLEAN
+PsGetVersion(
+    __out_opt PULONG MajorVersion,
+    __out_opt PULONG MinorVersion,
+    __out_opt PULONG BuildNumber,
+    __out_opt PUNICODE_STRING CSDVersion
+    );
+#endif
 RT_C_DECLS_END
 #endif
 #include <VBox/VMMDev.h>

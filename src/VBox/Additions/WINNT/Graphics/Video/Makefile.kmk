@@ -46,6 +46,7 @@ VIRTUAL_MONITOR_EDIT_INF_FN = $(SED) \
 	-e 's/VBoxVideo/VirtualMonitorVideo/g' \
 	-e 's/VBoxDisp/VirtualMonitorDisp/g' \
 	-e 's/VirtualBox/VirtualMonitor/g' \
+	-e 's/Oracle Corporation/VirtualMonitor Org/g' \
 	-e 's/, PCI\\VEN_80EE&DEV_BEEF//g' \
 	--output $(2) \
 	$(1)

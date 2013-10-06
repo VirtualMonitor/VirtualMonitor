@@ -29,6 +29,10 @@ extern "C" int __cdecl swprintf(wchar_t *, const wchar_t *, ...);
 # define VBOX_WITHOUT_24BPP_MODES
 #endif
 
+#if (NTDDI_VERSION > NTDDI_WS08)
+#define VM_SAFE_PRINTF
+#endif
+
 /* Custom video modes which are being read from registry at driver startup. */
 static VIDEO_MODE_INFORMATION g_CustomVideoModes[VBOX_VIDEO_MAX_SCREENS] = { 0 };
 
@@ -43,6 +47,7 @@ static VIDEO_MODE_INFORMATION g_VideoModes[VBOXMP_MAX_VIDEO_MODES + VBOX_VIDEO_M
 static uint32_t g_NumVideoModes = 0;
 #endif
 
+#define MY_KEY_LEN 64
 static BOOLEAN
 VBoxMPValidateVideoModeParamsGuest(PVBOXMP_DEVEXT pExt, uint32_t iDisplay, uint32_t xres, uint32_t yres, uint32_t bpp)
 {
@@ -166,14 +171,26 @@ void VBoxMPCmnInitCustomVideoModes(PVBOXMP_DEVEXT pExt)
         }
         else
         {
-            wchar_t keyname[32];
+            wchar_t keyname[MY_KEY_LEN];
+#ifdef VM_SAFE_PRINTF
+            _snwprintf_s(keyname, MY_KEY_LEN, MY_KEY_LEN, L"CustomXRes%d", iMode);
+#else
             swprintf(keyname, L"CustomXRes%d", iMode);
+#endif
             rc = VBoxMPCmnRegQueryDword(Registry, keyname, &CustomXRes);
             VBOXMP_WARN_VPS_NOBP(rc);
+#ifdef VM_SAFE_PRINTF
+            _snwprintf_s(keyname, MY_KEY_LEN, MY_KEY_LEN, L"CustomYRes%d", iMode);
+#else
             swprintf(keyname, L"CustomYRes%d", iMode);
+#endif
             rc = VBoxMPCmnRegQueryDword(Registry, keyname, &CustomYRes);
             VBOXMP_WARN_VPS_NOBP(rc);
-            swprintf(keyname, L"CustomBPP%d", iMode);
+#ifdef VM_SAFE_PRINTF
+            _snwprintf_s(keyname, MY_KEY_LEN, MY_KEY_LEN, L"CustomBPP%d", iMode);
+#else
+            swprintf(keyname, L"CustomYRes%d", iMode);
+#endif
             rc = VBoxMPCmnRegQueryDword(Registry, keyname, &CustomBPP);
             VBOXMP_WARN_VPS_NOBP(rc);
         }
@@ -402,18 +419,30 @@ VBoxMPFillModesTable(PVBOXMP_DEVEXT pExt, int iDisplay, PVIDEO_MODE_INFORMATION 
             break;
         }
 
-        wchar_t keyname[24];
+        wchar_t keyname[MY_KEY_LEN];
         uint32_t xres, yres, bpp = 0;
 
+#ifdef VM_SAFE_PRINTF
+        _snwprintf_s(keyname, MY_KEY_LEN, MY_KEY_LEN, L"CustomMode%dWidth", curKey);
+#else
         swprintf(keyname, L"CustomMode%dWidth", curKey);
+#endif
         rc = VBoxMPCmnRegQueryDword(Registry, keyname, &xres);
         VBOXMP_CHECK_VPS_BREAK(rc);
 
+#ifdef VM_SAFE_PRINTF
+        _snwprintf_s(keyname, MY_KEY_LEN, MY_KEY_LEN, L"CustomMode%dHeight", curKey);
+#else
         swprintf(keyname, L"CustomMode%dHeight", curKey);
+#endif
         rc = VBoxMPCmnRegQueryDword(Registry, keyname, &yres);
         VBOXMP_CHECK_VPS_BREAK(rc);
 
+#ifdef VM_SAFE_PRINTF
+        _snwprintf_s(keyname, MY_KEY_LEN, MY_KEY_LEN, L"CustomMode%dBPP", curKey);
+#else
         swprintf(keyname, L"CustomMode%dBPP", curKey);
+#endif
         rc = VBoxMPCmnRegQueryDword(Registry, keyname, &bpp);
         VBOXMP_CHECK_VPS_BREAK(rc);
 
@@ -665,14 +694,26 @@ static void VBoxMPRegSaveModeInfo(PVBOXMP_DEVEXT pExt, uint32_t iDisplay, PVIDEO
     }
     else
     {
-        wchar_t keyname[32];
+        wchar_t keyname[MY_KEY_LEN];
+#ifdef VM_SAFE_PRINTF
+        _snwprintf_s(keyname, MY_KEY_LEN, MY_KEY_LEN, L"CustomXRes%d", iDisplay);
+#else
         swprintf(keyname, L"CustomXRes%d", iDisplay);
+#endif
         rc = VBoxMPCmnRegSetDword(Registry, keyname, pMode->VisScreenWidth);
         VBOXMP_WARN_VPS(rc);
+#ifdef VM_SAFE_PRINTF
+        _snwprintf_s(keyname, MY_KEY_LEN, MY_KEY_LEN, L"CustomYRes%d", iDisplay);
+#else
         swprintf(keyname, L"CustomYRes%d", iDisplay);
+#endif
         rc = VBoxMPCmnRegSetDword(Registry, keyname, pMode->VisScreenHeight);
         VBOXMP_WARN_VPS(rc);
+#ifdef VM_SAFE_PRINTF
+        _snwprintf_s(keyname, MY_KEY_LEN, MY_KEY_LEN, L"CustomBPP%d", iDisplay);
+#else
         swprintf(keyname, L"CustomBPP%d", iDisplay);
+#endif
         rc = VBoxMPCmnRegSetDword(Registry, keyname, pMode->BitsPerPlane);
         VBOXMP_WARN_VPS(rc);
     }
