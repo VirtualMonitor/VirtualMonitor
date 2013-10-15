@@ -66,7 +66,7 @@ public:
     XpdmDrvIntf();
     virtual ~XpdmDrvIntf();
 
-    virtual int Init();
+    virtual int Init(DisplayParam &param);
     virtual int SetDisplayMode(uint32_t xRes, uint32_t yRes, uint32_t bpp);
     virtual int Enable();
     virtual int Disable();

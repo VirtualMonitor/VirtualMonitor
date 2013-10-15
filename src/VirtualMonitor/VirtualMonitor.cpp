@@ -15,14 +15,15 @@
 #include "DrvIntf.h"
 #include "VirtualMonitor.h"
 #include "Display.h"
+#include <stdio.h>
 
 #if defined (RT_OS_WINDOWS)
 #include <windows.h>
 char *evn = "Hello";
 extern "C" char **_environ = &evn;
-extern DrvIntf *XpdmDrvProbe();
+extern DrvIntf *XpdmDrvProbe(DisplayParam &param);
 #endif
-extern DrvIntf *DummyDrvProbe();
+extern DrvIntf *DummyDrvProbe(DisplayParam &param);
 
 struct VirtualMonitorDrvObj DrvObj[] = {
 #if defined (RT_OS_WINDOWS)
@@ -60,7 +61,7 @@ static BOOL CtrlHandler(DWORD fdwCtrlType)
 int VirtualMonitorMain(DisplayParam cmd)
 {
     for (int i = 0; i < RT_ELEMENTS(DrvObj); i++) {
-        drvIntfObj = DrvObj[i].pfnDispDrvProbe();
+        drvIntfObj = DrvObj[i].pfnDispDrvProbe(cmd);
         RTPrintf("Probe %s %s\n", DrvObj[i].DrvDesc, drvIntfObj ? "Successful" : "Failed");
         if (drvIntfObj) {
             break;
@@ -115,7 +116,6 @@ int VirtualMonitorMain(DisplayParam cmd)
                              evt.dirtyArea.top,
                              evt.dirtyArea.right,
                              evt.dirtyArea.bottom);
-
             }
         } else if (evt.code == EVENT_QUIT) {
             RTPrintf("Quit\n");

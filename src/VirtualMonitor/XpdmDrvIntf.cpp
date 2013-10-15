@@ -478,7 +478,7 @@ XpdmDrvIntf::~XpdmDrvIntf()
         delete pPixels;
 }
 
-int XpdmDrvIntf::Init()
+int XpdmDrvIntf::Init(DisplayParam &param)
 {
     if (!FindDeviceName()) {
         printf("Can't find dev\n");
@@ -491,11 +491,11 @@ int XpdmDrvIntf::Init()
     return 0;
 }
 
-DrvIntf *XpdmDrvProbe()
+DrvIntf *XpdmDrvProbe(DisplayParam &param)
 {
     XpdmDrvIntf *xpdm = new XpdmDrvIntf;
     Assert(xpdm);
-    if (xpdm->Init()) {
+    if (xpdm->Init(param)) {
         delete xpdm;
         return NULL;
     }

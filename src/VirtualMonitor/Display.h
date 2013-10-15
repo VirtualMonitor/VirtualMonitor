@@ -20,6 +20,8 @@ typedef struct _DisplayParam {
             uint32_t dummy;
         } usb;
     };
+	// for Testing
+	char *inputFile;
 } DisplayParam;
 
 class Display {

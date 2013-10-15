@@ -70,7 +70,13 @@ int decode_cmd(int argc, char **argv)
                 return -1;
             }
             strncpy(cmdParam.net.ipv4Addr, argv[++i], sizeof(cmdParam.net.ipv4Addr));
+        } else if (strcmp(argv[i], "-tf") == 0) { /* Testing file input. */
+            if (i + 1 >= argc) {
+                return -1;
+            }
+            cmdParam.inputFile = argv[++i];
         }
+
     }
     if (cmdParam.x == 0) {
         cmdParam.x = 800;
