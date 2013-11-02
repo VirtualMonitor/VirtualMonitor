@@ -200,7 +200,7 @@ static HDEVINFO GetDevInfoFromDeviceId(SP_DEVINFO_DATA *dev_info_data, CHAR *dev
 		return NULL;
 	}
 
-#if 1
+#if 0
 	memset(&detail_data, 0, sizeof(detail_data));
 	detail_data.cbSize = sizeof(detail_data);
 	if (SetupDiGetDeviceInfoListDetail(dev_info, &detail_data) == FALSE)
@@ -212,15 +212,14 @@ static HDEVINFO GetDevInfoFromDeviceId(SP_DEVINFO_DATA *dev_info_data, CHAR *dev
 
 	memset(&data, 0, sizeof(data));
 	data.cbSize = sizeof(data);
-	// 列挙開始
 	found = FALSE;
-	for (i = 0;SetupDiEnumDeviceInfo(dev_info, i, &data);i++) {
-		buffer = (LPTSTR)LocalAlloc(LPTR, buffer_size);
-		if (!buffer) {
-			logError("Alloc: %x\n", GetLastError());
-			goto out;
-		}
-		
+	buffer = (LPTSTR)LocalAlloc(LPTR, buffer_size);
+	if (!buffer) {
+		logError("Alloc: %x\n", GetLastError());
+		goto out;
+	}
+	
+	for (i = 0;SetupDiEnumDeviceInfo(dev_info, i, &data); i++) {
 		while (!SetupDiGetDeviceRegistryProperty(dev_info,
 												&data,
 												SPDRP_HARDWAREID,
@@ -242,17 +241,22 @@ static HDEVINFO GetDevInfoFromDeviceId(SP_DEVINFO_DATA *dev_info_data, CHAR *dev
 					goto out;
 				}
 			} else {
-				goto out;
+				// EnumNext
+				break;
 			}
 		}
 
-		if (strcmp(buffer, device_id) == 0) {
+		if (stricmp(buffer, device_id) == 0) {
+			printf("found\n");
 			found = TRUE;
 		}
 
 		if (found) {
 			goto out;
 		}
+
+		memset(&data, 0, sizeof(data));
+		data.cbSize = sizeof(data);
 	}
 out:
 	if (buffer)
@@ -338,8 +342,10 @@ int UnInstallDriver(HDEVINFO h, SP_DEVINFO_DATA *dev_info_data)
 	return ret;
 }
 
-static void usage()
+static void usage(_TCHAR *argv[])
 {
+	printf("%s argv[0] install VirtualMonitor.inf");
+	printf("%s argv[0] uninstall");
 }
 
 static void GetWinVersion()
@@ -375,7 +381,7 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 	}
 
 	if (argc < 2) {
-		usage();
+		usage(argv);
 		goto out;
 	}
 

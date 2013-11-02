@@ -38,7 +38,6 @@ VBoxVideo.Display  = 11 ; system32
 ;amd64 %VBoxVideo.SvcDesc% = VBoxVideo, PCI\VEN_80EE&DEV_BEEF
 
 [VBoxVideo]
-;amd64 FeatureScore = F8
 CopyFiles = VBoxVideo.Miniport, VBoxVideo.Display
 
 [VBoxVideo.Miniport]
@@ -72,6 +71,7 @@ HKR,, InstalledDisplayDrivers, %REG_MULTI_SZ%, VBoxDisp
 ; Set 'Full' hardware acceleration up. On W2003 the level is by default None=5, leading to software mouse cursor
 HKR,, Acceleration.Level, %REG_DWORD%, 0
 HKR,, VgaCompatible, %REG_DWORD%, 0
+HKR,, MirrorDriver, %REG_DWORD%, 1
 
 [VBoxVideo.OpenGLSoftwareSettings]
 

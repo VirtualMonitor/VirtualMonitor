@@ -208,6 +208,13 @@ BOOL XpdmDrvIntf::FindDeviceName()
 
     // First enumerate for Primary display device:
     while ((result = EnumDisplayDevices(NULL, devNum, &displayDevice, 0))) {
+#if 0
+		printf("%s, name: %s\n\tid: %s\n\t key: %s\n",
+				&displayDevice.DeviceString[0],
+				&displayDevice.DeviceName[0],
+				&displayDevice.DeviceID[0],
+				&displayDevice.DeviceKey[0]);
+#endif
         if (strcmp(&displayDevice.DeviceString[0], DRIVER_NAME) == 0) {
             bFound = TRUE;
             memcpy(&deviceName[0], (LPSTR)&displayDevice.DeviceName[0], sizeof(displayDevice.DeviceName));
@@ -342,6 +349,7 @@ int XpdmDrvIntf::Disable()
     CloseHandle(e);
 #endif
 
+	AeroCtrl(TRUE);
     return 0;
 }
 
@@ -413,9 +421,10 @@ int XpdmDrvIntf::GetEvent(Event &evt)
         } else if (dwStatus == WAIT_OBJECT_0 + 2) {
             // Quit
             evt.code = EVENT_QUIT;
-            printf("%s: %d\n", __FUNCTION__, __LINE__);
             return 0;
-        }
+        } else {
+			return -1;
+		}
     }
     return 0;
 }
@@ -478,6 +487,40 @@ XpdmDrvIntf::~XpdmDrvIntf()
         delete pPixels;
 }
 
+int XpdmDrvIntf::AeroCtrl(BOOL enable)
+{
+	int ret = -1;
+	BOOL isEnabled = TRUE;
+	HMODULE dwmapi;
+
+	typedef HRESULT (CALLBACK *PfnDwmEnableComposition)(BOOL   fEnable);
+	PfnDwmEnableComposition pfnDwmEnableComposition;
+	typedef HRESULT (CALLBACK *PfnDwmIsCompositionEnabled)(BOOL *pfEnabled);
+	PfnDwmIsCompositionEnabled pfnDwmIsCompositionEnabled = NULL;
+
+	if (osvi.dwMajorVersion >= 6) {
+		dwmapi = LoadLibrary("dwmapi.dll");
+		if (dwmapi != NULL) {
+			pfnDwmIsCompositionEnabled = (PfnDwmIsCompositionEnabled)GetProcAddress(dwmapi, "DwmIsCompositionEnabled");
+			pfnDwmEnableComposition = (PfnDwmEnableComposition)GetProcAddress(dwmapi, "DwmEnableComposition");
+			if (pfnDwmIsCompositionEnabled) {
+				pfnDwmIsCompositionEnabled(&isEnabled);
+			}
+			ret = 0;
+			// printf("Aero: %d, new: %d\n", isEnabled, enable);
+			if (isEnabled != enable) {
+				if (pfnDwmEnableComposition) {
+					pfnDwmEnableComposition(enable);
+				}
+			}
+			FreeLibrary(dwmapi);
+		}
+	} else {
+		ret = 0;
+	}
+	return ret;
+}
+
 int XpdmDrvIntf::Init()
 {
     if (!FindDeviceName()) {
@@ -488,6 +531,12 @@ int XpdmDrvIntf::Init()
         printf("Can't find %s in Registery\n", DRIVER_NAME);
         return -1;
     }
+
+ 	ZeroMemory(&osvi, sizeof(osvi));
+	osvi.dwOSVersionInfoSize = sizeof(osvi);
+	GetVersionEx(&osvi);
+
+	AeroCtrl(FALSE);
     return 0;
 }
 

@@ -81,12 +81,14 @@ private:
     RECT dirtyRect;
     struct EventArray events;
     CHAR deviceName[DEVICE_NAME_SIZE];
+	OSVERSIONINFO osvi;
 
     LPSTR GetDispCode(INT code);
     BOOL OpenDeviceRegistryKey();
     BOOL FindDeviceName();
     BOOL XpdmDrvCtrlReStart();
     int ForceUpDate(uint32_t left, uint32_t top, uint32_t right, uint32_t bottom);
+	int XpdmDrvIntf::AeroCtrl(BOOL enable);
 };
 
 #endif /* __XPDM_DRV_INTF_H__ */
