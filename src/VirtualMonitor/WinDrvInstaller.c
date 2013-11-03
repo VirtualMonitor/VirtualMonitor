@@ -14,13 +14,19 @@ typedef BOOL (*PUpdateDriverForPlugAndPlayDevices)(HWND hwndParent,
 												DWORD InstallFlags,
 												PBOOL bRebootRequired);
 static GUID  DisplayGuid = {0x4d36e968, 0xe325, 0x11ce, {0xbf, 0xc1, 0x08, 0x00, 0x2b, 0xe1, 0x03, 0x18}};
+#define MIRROR_REG_PATH "SYSTEM\\CurrentControlSet\\Control\\Class\\{4D36E968-E325-11CE-BFC1-08002BE10318}"
+
 
 #define INSTALL_LOG_FILE "VirtualMonitorInstall.log"
 #define DRIVER_NAME "VirtualMonitorVideo\0\0\0"
 
 static FILE *g_logf = NULL;
 static OSVERSIONINFOEX osvi;
-static BOOL bIsWindowsXPorLater;
+static BOOL isWin2k = FALSE;
+static BOOL isWinXp = FALSE;
+static BOOL isVista = FALSE;
+static BOOL isWin7 = FALSE;
+static BOOL isSupport = FALSE;
 
 static void logError(const char *fmt, ...)
 {
@@ -185,7 +191,6 @@ static void DestroyDevInfo(HDEVINFO info)
 static HDEVINFO GetDevInfoFromDeviceId(SP_DEVINFO_DATA *dev_info_data, CHAR *device_id)
 {
 	HDEVINFO dev_info;
-	SP_DEVINFO_LIST_DETAIL_DATA detail_data;
 	SP_DEVINFO_DATA data;
 	UINT i;
 	BOOL found;
@@ -201,6 +206,7 @@ static HDEVINFO GetDevInfoFromDeviceId(SP_DEVINFO_DATA *dev_info_data, CHAR *dev
 	}
 
 #if 0
+	SP_DEVINFO_LIST_DETAIL_DATA detail_data;
 	memset(&detail_data, 0, sizeof(detail_data));
 	detail_data.cbSize = sizeof(detail_data);
 	if (SetupDiGetDeviceInfoListDetail(dev_info, &detail_data) == FALSE)
@@ -350,24 +356,209 @@ static void usage(_TCHAR *argv[])
 
 static void GetWinVersion()
 {
-	BOOL bIsWindowsXPorLater;
 	ZeroMemory(&osvi, sizeof(OSVERSIONINFOEX));
 	osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-	GetVersionEx(&osvi);
-	bIsWindowsXPorLater = ((osvi.dwMajorVersion >= 6));
+	GetVersionEx((LPOSVERSIONINFO)&osvi);
 	logInfo("Windows version: %d.%d.%d.%d\n",
 			osvi.dwMajorVersion,
 			osvi.dwMinorVersion,
 			osvi.dwBuildNumber,
 			osvi.dwPlatformId);
-	logInfo("Service pack: %d.%d ProductType: %d, vista+: %d\n",
+	logInfo("Service pack: %d.%d ProductType: %d\n",
 			osvi.wServicePackMajor,
 	  		osvi.wServicePackMinor,
-		  	osvi.wProductType,
-			bIsWindowsXPorLater);
+		  	osvi.wProductType);
 	logInfo("%s\n",  osvi.szCSDVersion);
+
+    if ( osvi.dwMajorVersion == 5) {
+		if (osvi.dwMinorVersion == 0) {
+			isWin2k = TRUE;
+		} else {
+			isWinXp = TRUE;
+		}
+    } else if (osvi.dwMajorVersion == 6) {
+		if (osvi.dwMinorVersion == 0) {
+			isVista = TRUE;
+		}
+		if (osvi.dwMinorVersion == 1) {
+			isWin7 = TRUE;	
+		}
+	}
+	isSupport = isWin2k || isWinXp || isVista || isWin7;
 }
 
+HKEY GetDriverRegKey()
+{
+	CHAR devid[256];
+	HKEY hSubKey;
+	HKEY hRegRoot;
+	BOOL found = FALSE;
+	LONG rc;
+    LONG query;
+    DWORD dwType = 0;
+    DWORD dwIdIndex;
+    CHAR idName[64];
+    DWORD idSize = sizeof(idName);
+	DWORD dwSize= sizeof(devid);
+
+	rc = RegOpenKeyEx(HKEY_LOCAL_MACHINE,
+						MIRROR_REG_PATH,
+						0,
+						KEY_READ,
+						&hRegRoot);
+	if (rc != ERROR_SUCCESS) {
+		RegCloseKey(hRegRoot);
+		logError("Open driver registry root key failed %x, %d\n", GetLastError() , rc);
+		return NULL;
+	}
+	
+    dwIdIndex = 0;
+    do {
+        query = RegEnumKeyEx(hRegRoot,
+                            dwIdIndex,
+                            &idName[0],
+                            &idSize,
+                            0,
+                            NULL,
+                            NULL,
+                            NULL);
+        idSize = sizeof(idName);
+        dwIdIndex++;
+		rc = RegOpenKeyEx(hRegRoot,
+				idName,
+				0,
+				KEY_READ,
+				&hSubKey);
+		if (rc != ERROR_SUCCESS) {
+			logError("Open sub key for query failed:%s %x\n", idName, GetLastError());
+			RegCloseKey(hSubKey);
+			continue;
+		}
+		rc = RegQueryValueEx(hSubKey,
+				"MatchingDeviceId",
+				0,
+				&dwType,
+				(PBYTE)&devid,
+				&dwSize);
+		dwSize = sizeof(devid);
+		if (rc != ERROR_SUCCESS) {
+			RegCloseKey(hSubKey);
+			continue;
+		}
+
+		if (dwType == REG_SZ) {
+			if (stricmp(devid, DRIVER_NAME) == 0) {
+				logInfo("found: %s Driver\n", idName, devid);
+				found = TRUE;
+				break;
+			}
+		}
+		RegCloseKey(hSubKey);
+    } while (query != ERROR_NO_MORE_ITEMS);
+
+	RegCloseKey(hSubKey);
+	hSubKey = NULL;
+	if (found) {
+		rc = RegOpenKeyEx(hRegRoot,
+				idName,
+				0,
+				KEY_ALL_ACCESS,
+				&hSubKey);
+		if (rc != ERROR_SUCCESS) {
+			logError("Open driver registry key for write failed, %x, %d\n", GetLastError(), rc);
+		}
+	}
+	
+	RegCloseKey(hRegRoot);
+	return hSubKey;
+}
+
+BOOL DisableMirror()
+{
+	LONG rc;
+	HKEY hRootKey = NULL;
+	HKEY hSubKey;
+	DWORD mirror = 0;
+	BOOL ret = FALSE;
+	int i;
+
+	for (i = 0; i < 6*10; i++) {
+		hRootKey = GetDriverRegKey();
+		if (hRootKey)
+			break;
+		Sleep(10*1000);
+	} 
+	if (!hRootKey) {
+		goto out;
+	}
+
+	logInfo("Open Driver Setting Key ok: %d\n", i);
+	rc = RegOpenKeyEx(hRootKey,
+						"Settings",
+						0,
+						KEY_ALL_ACCESS,
+						&hSubKey);
+	if (rc != ERROR_SUCCESS) {
+		logError("Settings %x, %d\n", GetLastError() , rc);
+		goto CloseRoot;
+	}
+
+	rc = RegSetValueEx(hSubKey,
+						"MirrorDriver",
+						0,
+						REG_DWORD,
+						(const BYTE *)&mirror,
+						sizeof(mirror));
+	if (rc != ERROR_SUCCESS) {
+		logError("Set MirrorDriver Failed %x, %d\n", GetLastError() , rc);
+		goto CloseSub;
+	}
+	ret = TRUE;
+
+CloseSub:
+	RegCloseKey(hSubKey);
+CloseRoot:
+	RegCloseKey(hRootKey);
+out:
+	return ret;
+}
+
+BOOL CleanOemInf()
+{
+	HKEY hRootKey = NULL;
+	CHAR inf[256];
+    DWORD dwType = 0;
+	BOOL ret = FALSE;
+	LONG rc;
+	DWORD dwSize= sizeof(inf) - 3;
+
+	hRootKey = GetDriverRegKey();
+	if (!hRootKey) {
+		logError("Open Driver registry failed\n");
+		return ret;
+	}
+	memset(inf, 0, sizeof(inf));
+	inf[0] = '-';
+	inf[1] = 'd';
+	inf[2] = ' ';
+	rc = RegQueryValueEx(hRootKey,
+						"InfPath",
+						0,
+						&dwType,
+						(PBYTE)&inf[3],
+						&dwSize);
+	if (rc != ERROR_SUCCESS) {
+		logError("uninstall get OEM Inf failed: %x %d\n", GetLastError(), rc);
+		goto out;
+	}
+
+	logInfo("uninstall OEM Inf: %s\n", inf);
+	ShellExecute(NULL, "open", "pnputil.exe", inf, NULL, SW_HIDE);
+	ret = TRUE;
+out:
+	RegCloseKey(hRootKey);
+	return ret;
+}
 
 int __cdecl _tmain(int argc, _TCHAR *argv[])
 {
@@ -386,7 +577,11 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 	}
 
 	GetWinVersion();
-
+	if (!isSupport) {
+		logInfo("Unsupported Windows system\n");
+		printf("Unsupported Windows system\n");
+		goto out;
+	}
 	h = GetDevInfoFromDeviceId(&dev_info_data, DRIVER_NAME);
 	if (!strcmp(argv[1], "install")) {
 		if (h) {
@@ -395,13 +590,17 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 			goto out;
 		}
 		InstallInf(argv[2]);
+		DisableMirror();
 	} else if (!strcmp(argv[1], "uninstall")) {
 		if (!h) {
 			logInfo("Driver not found\n");
 			printf("Driver not found\n");
-			goto out;
+		} else {
+			UnInstallDriver(h, &dev_info_data);
 		}
-		UnInstallDriver(h, &dev_info_data);
+		if (isVista || isWin7) {
+			CleanOemInf();
+		}
 	}
 out:
 	if (g_logf)
