@@ -15,6 +15,7 @@ typedef BOOL (*PUpdateDriverForPlugAndPlayDevices)(HWND hwndParent,
 												PBOOL bRebootRequired);
 static GUID  DisplayGuid = {0x4d36e968, 0xe325, 0x11ce, {0xbf, 0xc1, 0x08, 0x00, 0x2b, 0xe1, 0x03, 0x18}};
 #define MIRROR_REG_PATH "SYSTEM\\CurrentControlSet\\Control\\Class\\{4D36E968-E325-11CE-BFC1-08002BE10318}"
+#define RUNONCE_REG_PATH "Software\\Microsoft\\Windows\\CurrentVersion\\RunOnce"
 
 
 #define INSTALL_LOG_FILE "VirtualMonitorInstall.log"
@@ -530,7 +531,8 @@ BOOL CleanOemInf()
     DWORD dwType = 0;
 	BOOL ret = FALSE;
 	LONG rc;
-	DWORD dwSize= sizeof(inf) - 3;
+	DWORD dwSize;
+	int n;
 
 	hRootKey = GetDriverRegKey();
 	if (!hRootKey) {
@@ -538,22 +540,46 @@ BOOL CleanOemInf()
 		return ret;
 	}
 	memset(inf, 0, sizeof(inf));
-	inf[0] = '-';
-	inf[1] = 'd';
-	inf[2] = ' ';
+	n = sprintf(inf, "%s", "pnputil.exe -d ");
+	dwSize = sizeof(inf) - n;
 	rc = RegQueryValueEx(hRootKey,
 						"InfPath",
 						0,
 						&dwType,
-						(PBYTE)&inf[3],
+						(PBYTE)&inf[n],
 						&dwSize);
 	if (rc != ERROR_SUCCESS) {
 		logError("uninstall get OEM Inf failed: %x %d\n", GetLastError(), rc);
 		goto out;
 	}
-
 	logInfo("uninstall OEM Inf: %s\n", inf);
-	ShellExecute(NULL, "open", "pnputil.exe", inf, NULL, SW_HIDE);
+	RegCloseKey(hRootKey);
+
+	rc = RegCreateKeyEx(HKEY_LOCAL_MACHINE,
+						RUNONCE_REG_PATH,
+						0,
+						NULL,
+						REG_OPTION_NON_VOLATILE,
+						KEY_WRITE,
+						NULL,
+						&hRootKey,
+						NULL);
+	if (rc != ERROR_SUCCESS) {
+		RegCloseKey(hRootKey);
+		logError("uninstall Open RunOnce Key failed: %x, %d\n", GetLastError() , rc);
+		goto out;
+	}
+
+	rc = RegSetValueEx(hRootKey,
+						"!VirtualMonitorRemove",
+						0,
+						REG_SZ,
+						(const BYTE*)inf, dwSize+n);
+	if (rc != ERROR_SUCCESS) {
+		RegCloseKey(hRootKey);
+		logError("uninstall Write RunOnce Key failed: %x, %d\n", GetLastError() , rc);
+		goto out;
+	}
 	ret = TRUE;
 out:
 	RegCloseKey(hRootKey);
@@ -601,6 +627,7 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 		if (isVista || isWin7) {
 			CleanOemInf();
 		}
+		printf("Please Reboot System\n");
 	}
 out:
 	if (g_logf)
