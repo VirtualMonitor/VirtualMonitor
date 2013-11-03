@@ -351,8 +351,8 @@ int UnInstallDriver(HDEVINFO h, SP_DEVINFO_DATA *dev_info_data)
 
 static void usage(_TCHAR *argv[])
 {
-	printf("%s argv[0] install VirtualMonitor.inf");
-	printf("%s argv[0] uninstall");
+	printf("%s install VirtualMonitor.inf\n", argv[0] );
+	printf("%s uninstall\n", argv[0]);
 }
 
 static void GetWinVersion()
@@ -591,23 +591,32 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 	HDEVINFO h = NULL;
 	SP_DEVINFO_DATA dev_info_data;
 
+	if (argc < 2) {
+		usage(argv);
+		goto out;
+	}
+
+	AllocConsole();
 	g_logf = fopen(INSTALL_LOG_FILE, "w+");
 	if (!g_logf) {
 		printf("Can't Open install log file\n");
 		return -1;
 	}
 
-	if (argc < 2) {
-		usage(argv);
-		goto out;
-	}
-
 	GetWinVersion();
 	if (!isSupport) {
-		logInfo("Unsupported Windows system\n");
 		printf("Unsupported Windows system\n");
 		goto out;
 	}
+	if (isVista || isWin7) {
+		if (!IsUserAnAdmin()) {
+			printf("Access Denied. Administrator permissions are needed to use the selected options.");
+			printf("Use an administrator command prompt to complete these tasks.");
+			goto out;
+		}
+	}
+
+
 	h = GetDevInfoFromDeviceId(&dev_info_data, DRIVER_NAME);
 	if (!strcmp(argv[1], "install")) {
 		if (h) {

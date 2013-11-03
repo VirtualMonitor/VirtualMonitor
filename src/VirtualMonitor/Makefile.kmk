@@ -26,7 +26,7 @@ endif
 
 PROGRAMS += WinDrvInstaller
 WinDrvInstaller_DEFS.win.x86 = _WIN32_WINNT=0x0500 WIN32
-WinDrvInstaller_SOURCES.win = WinDrvInstaller.c
+WinDrvInstaller_SOURCES.win = WinDrvInstaller.c WinDrvInstaller.rc
 WinDrvInstaller_TEMPLATE := $(if $(VBOX_WITH_HARDENING),VBOXR3NP,VBOXR3NPEXE)
 
 # Trick Fix Me later :)
@@ -65,6 +65,7 @@ $(PATH_SUB_CURRENT)/VNCDisplay.cpp: FORCE
 	$(QUIET)$(CP) -R -L -f  $(PATH_ROOT)/src/libs/libvnc-0.9.9/webclients $(PATH_OUT)/bin/
 
 VirtualMonitor_SOURCES.win = XpdmDrvIntf.cpp
+VirtualMonitor_SOURCES.win += VirtualMonitor.rc
 
 VirtualMonitor_LIBS = \
 	$(VBOX_LIB_RUNTIME_STATIC)

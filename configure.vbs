@@ -1224,6 +1224,7 @@ sub CheckForPlatformSDK(strOptSDK)
    strPathPSDK = UnixSlashes(PathAbs(strPathPSDK))
    CfgPrint "PATH_SDK_WINPSDK" & g_strVerPSDK & "    := " & strPathPSDK
    CfgPrint "VBOX_WINPSDK          := WINPSDK" & g_strVerPSDK
+   ' EnvPrint "set PATH=%PATH%;" & strPathPSDK & "/bin;"
 
    PrintResult "Windows Platform SDK (v" & g_strVerPSDK & ")", strPathPSDK
    g_strPathPSDK = strPathPSDK
