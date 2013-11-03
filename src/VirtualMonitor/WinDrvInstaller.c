@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <Newdev.h>
 #include<Cfgmgr32.h>
+#include <Shlobj.h>
 
 typedef BOOL (*PINSTALL_NEW_DEVICE)(HWND, LPGUID, PDWORD);
 typedef BOOL (*PUpdateDriverForPlugAndPlayDevices)(HWND hwndParent,
@@ -596,7 +597,6 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 		goto out;
 	}
 
-	AllocConsole();
 	g_logf = fopen(INSTALL_LOG_FILE, "w+");
 	if (!g_logf) {
 		printf("Can't Open install log file\n");
