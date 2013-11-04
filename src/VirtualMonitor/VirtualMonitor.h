@@ -6,7 +6,7 @@
 #include "DrvIntf.h"
 #include "Display.h"
 
-typedef DECLCALLBACK(DrvIntf *)  FNDRVPROBE();
+typedef DECLCALLBACK(DrvIntf *)  FNDRVPROBE(DisplayParam &param);
 /** Pointer to a FNPDMDRVCONSTRUCT() function. */
 typedef FNDRVPROBE *PFNDRVPROBE;
 

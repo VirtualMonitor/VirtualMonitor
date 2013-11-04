@@ -3,6 +3,7 @@
 #define  RT_STRICT 
 #include <VBox/types.h>
 #include <iprt/assert.h>
+#include "Display.h"
 
 enum EVENT_CODE {
     EVENT_DITRY_AREA,
@@ -38,7 +39,7 @@ class DrvIntf {
 public:
     DrvIntf() {};
     virtual ~DrvIntf() { };
-    virtual int Init() = 0;
+    virtual int Init(DisplayParam &param) = 0;
     virtual int SetDisplayMode(uint32_t xRes, uint32_t yRes, uint32_t bpp) = 0;
     virtual int Enable() = 0;
     virtual int Disable() = 0;

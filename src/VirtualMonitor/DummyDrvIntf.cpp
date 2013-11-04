@@ -6,13 +6,14 @@
 #include <iprt/thread.h>
 
 #include "DrvIntf.h"
+#include "Display.h"
 
 class DummyDrvIntf: public DrvIntf {
 public:
     DummyDrvIntf() { pPixels = NULL; pixelsLen = 0;};
     virtual ~DummyDrvIntf(); 
 
-    virtual int Init();
+    virtual int Init(DisplayParam &param);
     virtual int SetDisplayMode(uint32_t xRes, uint32_t yRes, uint32_t bpp);
     virtual int Enable();
     virtual int Disable();
@@ -23,6 +24,7 @@ private:
     uint8_t *pPixels;
     uint32_t pixelsLen;
 	bool running;
+	FILE *inputFile;
 };
 
 int DummyDrvIntf::Enable()
@@ -68,28 +70,36 @@ int DummyDrvIntf::GetEvent(Event &evt)
 
 	while (running) {
         RTThreadSleep(1000*2);
-        x = RTRandU32() % xRes;
-        y = RTRandU32() % yRes;
-        dx = xRes - x;
-        dy = yRes - y;
-        if (dx == 0 || dy == 0) {
-            continue;
-        }
-		w = RTRandU32() % dx;
-		h = RTRandU32() % dy;
-		w += x;
-		h += y;
-		// only support 32bit true color
-		LineSize = xRes*((bpp+7)/8);
-        color = RTRandU32() & 0xFFFFFF;
-        for (i = y; i < h; i++) {
-			dst = (uint32_t*)&(pPixels[LineSize*i]);
-            dst = (uint32_t*)&(pPixels[LineSize*i]);
-            for (j = x; j < w; j++) {
-				dst[j] = color;
-            }
-        }
 
+		if (this->inputFile) {
+			fread(pPixels, 1, xRes*yRes*(bpp>>3), inputFile);
+			x = 0;
+			y = 0;
+			w = xRes;
+			h = yRes;
+		} else {
+			x = RTRandU32() % xRes;
+			y = RTRandU32() % yRes;
+			dx = xRes - x;
+			dy = yRes - y;
+			if (dx == 0 || dy == 0) {
+				continue;
+			}
+			w = RTRandU32() % dx;
+			h = RTRandU32() % dy;
+			w += x;
+			h += y;
+			// only support 32bit true color
+			LineSize = xRes*((bpp+7)/8);
+			color = RTRandU32() & 0xFFFFFF;
+			for (i = y; i < h; i++) {
+				dst = (uint32_t*)&(pPixels[LineSize*i]);
+				dst = (uint32_t*)&(pPixels[LineSize*i]);
+				for (j = x; j < w; j++) {
+					dst[j] = color;
+				}
+			}
+		}
         evt.code = EVENT_DITRY_AREA;
         evt.dirtyArea.left = x;
         evt.dirtyArea.top = y;
@@ -127,8 +137,10 @@ int DummyDrvIntf::SetDisplayMode(uint32_t xRes, uint32_t yRes, uint32_t bpp)
 	return 0;
 }
 
-int DummyDrvIntf::Init()
+int DummyDrvIntf::Init(DisplayParam &param)
 {
+	if (param.inputFile)
+		inputFile = fopen(param.inputFile, "r");
 	// Always return success
 	return 0;
 }
@@ -138,15 +150,19 @@ DummyDrvIntf::~DummyDrvIntf()
 	if (pPixels) {
 		delete pPixels;
 	}
+	if (inputFile) {
+		fclose(inputFile);
+	}
+	inputFile = NULL;
 	pPixels = NULL;
 	pixelsLen = 0;
 };
 
-DrvIntf *DummyDrvProbe()
+DrvIntf *DummyDrvProbe(DisplayParam &param)
 {
     DummyDrvIntf *dummy= new DummyDrvIntf;
     Assert(dummy);
-    if (dummy->Init()) {
+    if (dummy->Init(param)) {
         delete dummy;
         return NULL;
     }

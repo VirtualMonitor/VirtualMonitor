@@ -18,6 +18,22 @@ static DisplayParam cmdParam;
 
 void Usage()
 {
+    RTPrintf("-x Number\t specify x resolution\n");
+    RTPrintf("-x Number\t specify y resolution\n");
+    RTPrintf("-bpp Number\t specify bit per pixel, currently only support 32bit true color\n");
+    RTPrintf("-a4 IPv4 address\t listen on specified IPv4 address only\n");
+    RTPrintf("-p4 Number\t listen on specify IPv4 port\n");
+    RTPrintf("-a6 IPv6\t address. listen on specified IPv4 address only\n");
+    RTPrintf("-p6 Number\t listen on specify IPv4 port\n");
+    RTPrintf("-dummy\t use dummy driver, this option is for developer\n");
+    RTPrintf("-tf filename\t use filename as input pixel, this option is for developer\n");
+    RTPrintf("-h \t show this help message\n");
+	RTPrintf("\n example\n");
+	RTPrintf("VirtualMonitor -x 300 -y 400\n");
+	RTPrintf("it will create a virtual monitor with 300*400*32.\n");
+	RTPrintf("And will listen on all interface with useable port\n");
+	RTPrintf("5800 is the default listening port, if it is was using by other program.\n");
+	RTPrintf("Then it will choose another port.\n");
 }
 
 void dump_cmd(DisplayParam *cmd)
@@ -32,9 +48,11 @@ int decode_cmd(int argc, char **argv)
     int i, i1;
     memset(&cmdParam, 0, sizeof(cmdParam));
 
-    RTPrintf("%s: %d argc: %d\n", __FUNCTION__, __LINE__, argc);
-        
     for (i = i1 = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-h") == 0) {
+			// show help message
+			return -1;
+		}
         if (strcmp(argv[i], "-x") == 0) { /* X resolution */
             if (i + 1 >= argc) {
                 return -1;
@@ -70,7 +88,16 @@ int decode_cmd(int argc, char **argv)
                 return -1;
             }
             strncpy(cmdParam.net.ipv4Addr, argv[++i], sizeof(cmdParam.net.ipv4Addr));
-        }
+        } else if (strcmp(argv[i], "-tf") == 0) { /* Testing file input. */
+            if (i + 1 >= argc) {
+                return -1;
+            }
+            cmdParam.inputFile = argv[++i];
+			// testing file only works with dummy driver, so enable it automatically.
+			cmdParam.enableDummyDriver = true;
+        } else if (strcmp(argv[i], "-dummy") == 0) { /* use dummy Driver */
+			cmdParam.enableDummyDriver = true;
+		}
     }
     if (cmdParam.x == 0) {
         cmdParam.x = 800;
@@ -83,7 +110,7 @@ int decode_cmd(int argc, char **argv)
     }
     // Only 32 bpp works on current XPDM driver
     cmdParam.bpp = 32;
-    dump_cmd(&cmdParam);
+    // dump_cmd(&cmdParam);
     return 0;
 }
 

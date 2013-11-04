@@ -15,14 +15,16 @@
 #include "DrvIntf.h"
 #include "VirtualMonitor.h"
 #include "Display.h"
+#include <stdio.h>
 
 #if defined (RT_OS_WINDOWS)
 #include <windows.h>
+#include <Shlobj.h>
 char *evn = "Hello";
 extern "C" char **_environ = &evn;
-extern DrvIntf *XpdmDrvProbe();
+extern DrvIntf *XpdmDrvProbe(DisplayParam &param);
 #endif
-extern DrvIntf *DummyDrvProbe();
+extern DrvIntf *DummyDrvProbe(DisplayParam &param);
 
 struct VirtualMonitorDrvObj DrvObj[] = {
 #if defined (RT_OS_WINDOWS)
@@ -57,15 +59,64 @@ static BOOL CtrlHandler(DWORD fdwCtrlType)
 }
 #endif
 
+static bool IsSupport()
+{
+	bool ret = true;
+#if defined (RT_OS_WINDOWS)
+	OSVERSIONINFOEX osvi;
+	bool isVista = false;
+	bool isWin7 = false;
+	ZeroMemory(&osvi, sizeof(OSVERSIONINFOEX));
+	osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+	GetVersionEx((LPOSVERSIONINFO)&osvi);
+
+    if (osvi.dwMajorVersion == 5) {
+			ret = true;
+    } else if (osvi.dwMajorVersion == 6) {
+		if (osvi.dwMinorVersion == 0) {
+			isVista = true;
+			ret = true;
+		}
+		if (osvi.dwMinorVersion == 1) {
+			isWin7 = true;
+			ret = true;
+		}
+	}
+	if (isVista || isWin7) {
+		if (!IsUserAnAdmin()) {
+			printf("Access Denied. Administrator permissions are needed to use the selected options.");
+			printf("Use an administrator command prompt to complete these tasks.");
+			return false;
+		}
+	}
+#endif
+	return ret;
+}
+
 int VirtualMonitorMain(DisplayParam cmd)
 {
-    for (int i = 0; i < RT_ELEMENTS(DrvObj); i++) {
-        drvIntfObj = DrvObj[i].pfnDispDrvProbe();
+	int i = 0;
+	int total = RT_ELEMENTS(DrvObj);
+	if (cmd.enableDummyDriver) {
+		i = RT_ELEMENTS(DrvObj) - 1;
+	} else {
+		// dummy Driver disabled, skip
+		total -= 1;
+	}
+	if (!IsSupport()) {
+		return -1;
+	}
+	do {
+        drvIntfObj = DrvObj[i].pfnDispDrvProbe(cmd);
         RTPrintf("Probe %s %s\n", DrvObj[i].DrvDesc, drvIntfObj ? "Successful" : "Failed");
         if (drvIntfObj) {
             break;
         }
-    }
+		i++;
+    } while (i < total);
+	if (!drvIntfObj) {
+		return -1;
+	}
 
 #if defined (RT_OS_WINDOWS)
     SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE);
@@ -115,7 +166,6 @@ int VirtualMonitorMain(DisplayParam cmd)
                              evt.dirtyArea.top,
                              evt.dirtyArea.right,
                              evt.dirtyArea.bottom);
-
             }
         } else if (evt.code == EVENT_QUIT) {
             RTPrintf("Quit\n");
