@@ -102,9 +102,9 @@ int VirtualMonitorMain(DisplayParam cmd)
 	} else {
 		// dummy Driver disabled, skip
 		total -= 1;
-	}
-	if (!IsSupport()) {
-		return -1;
+		if (!IsSupport()) {
+			return -1;
+		}
 	}
 	do {
         drvIntfObj = DrvObj[i].pfnDispDrvProbe(cmd);

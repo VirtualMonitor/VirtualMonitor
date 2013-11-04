@@ -5,7 +5,7 @@
 #include <tchar.h>
 #include <stdio.h>
 #include <Newdev.h>
-#include<Cfgmgr32.h>
+#include <Cfgmgr32.h>
 #include <Shlobj.h>
 
 typedef BOOL (*PINSTALL_NEW_DEVICE)(HWND, LPGUID, PDWORD);
@@ -21,6 +21,7 @@ static GUID  DisplayGuid = {0x4d36e968, 0xe325, 0x11ce, {0xbf, 0xc1, 0x08, 0x00,
 
 #define INSTALL_LOG_FILE "VirtualMonitorInstall.log"
 #define DRIVER_NAME "VirtualMonitorVideo\0\0\0"
+#define INF	"VirtualMonitor.inf"
 
 static FILE *g_logf = NULL;
 static OSVERSIONINFOEX osvi;
@@ -196,7 +197,7 @@ static HDEVINFO GetDevInfoFromDeviceId(SP_DEVINFO_DATA *dev_info_data, CHAR *dev
 	SP_DEVINFO_DATA data;
 	UINT i;
 	BOOL found;
-	char *buffer;
+	CHAR *buffer;
 	UINT buffer_size = 8092;
 	DWORD required_size;
 	DWORD data_type;
@@ -352,8 +353,9 @@ int UnInstallDriver(HDEVINFO h, SP_DEVINFO_DATA *dev_info_data)
 
 static void usage(_TCHAR *argv[])
 {
-	printf("%s install VirtualMonitor.inf\n", argv[0] );
-	printf("%s uninstall\n", argv[0]);
+	printf("%s -i\t install driver\n", argv[0] );
+	printf("%s -u\t uninstall driver\n", argv[0]);
+	printf("%s -h\t show help\n", argv[0]);
 }
 
 static void GetWinVersion()
@@ -587,12 +589,79 @@ out:
 	return ret;
 }
 
+BOOL FixInfFile(CHAR *inf)
+{
+	FILE *fp;
+	CHAR *buf = NULL;
+	int sz;
+	int ch;
+	BOOL ret = FALSE;
+	int line = 0;
+	int current = 0;
+	int i = 0;
+
+
+	fp = fopen(inf, "r");
+	if (!fp) {
+		logError("Read INF File Failed\n");
+		goto out;
+	}
+
+	fseek(fp, 0L, SEEK_END);
+	sz = ftell(fp) + 100;
+	fseek(fp, 0L, SEEK_SET);
+
+	buf = (LPTSTR)LocalAlloc(LPTR, sz+100);
+	if (!buf) {
+		logError("Can't allocate memory for INF\n");	
+		goto out;
+	}
+	memset(buf, 0, sz+100);
+	do {
+		ch = fgetc(fp);
+		buf[i] = ch;
+		if (ch == '\n') {
+			if (strstr(&buf[current], "MirrorDriver")) {
+				sz = sprintf(&buf[current], "%s", "HKR,, MirrorDriver, %REG_DWORD%, ");
+				if (isVista || isWin7) {
+					sz += sprintf(&buf[current+sz], "%d\n", 1);
+				} else {
+					sz += sprintf(&buf[current+sz], "%d\n", 0);
+				}
+				i = current+sz-1;
+				current += sz;
+			} else {
+				current = i+1;
+			}
+			line++;
+		}
+		i++;
+	} while (ch != EOF);
+
+	fclose(fp);
+	
+	fp = fopen(inf, "w+");
+	if (!fp) {
+		logError("Write INF File Failed\n");
+		goto out;
+	}
+	// 1 for EOF, and 1 for last 1++
+	fwrite(buf, i-2, 1, fp);
+	fclose(fp);
+out:
+	if (fp)
+		fclose(fp);
+	if (buf)
+		LocalFree(buf);
+	return ret;
+}
+
 int __cdecl _tmain(int argc, _TCHAR *argv[])
 {
 	HDEVINFO h = NULL;
 	SP_DEVINFO_DATA dev_info_data;
 
-	if (argc < 2) {
+	if (argc < 2 || !strcmp(argv[1], "-h")) {
 		usage(argv);
 		goto out;
 	}
@@ -617,16 +686,21 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 	}
 
 
+	if (!strcmp(argv[1], "-i")) {
+		FixInfFile(INF);
+	}
 	h = GetDevInfoFromDeviceId(&dev_info_data, DRIVER_NAME);
-	if (!strcmp(argv[1], "install")) {
+	if (!strcmp(argv[1], "-i")) {
 		if (h) {
 			logInfo("Driver already installed\n");
 			printf("Driver already installed\n");
 			goto out;
 		}
-		InstallInf(argv[2]);
-		DisableMirror();
-	} else if (!strcmp(argv[1], "uninstall")) {
+		InstallInf(INF);
+		if (isVista || isWin7) {
+			DisableMirror();
+		}
+	} else if (!strcmp(argv[1], "-u")) {
 		if (!h) {
 			logInfo("Driver not found\n");
 			printf("Driver not found\n");
@@ -637,6 +711,8 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 			CleanOemInf();
 		}
 		printf("Please Reboot System\n");
+	} else {
+		usage(argv);
 	}
 out:
 	if (g_logf)
@@ -646,5 +722,3 @@ out:
 	}
 	exit(0);
 }
-
-
