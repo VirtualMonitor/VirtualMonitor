@@ -645,8 +645,8 @@ BOOL FixInfFile(CHAR *inf)
 		logError("Write INF File Failed\n");
 		goto out;
 	}
-	// 1 for EOF, and 1 for last 1++
-	fwrite(buf, i-2, 1, fp);
+	// 1 for EOF
+	fwrite(buf, i-1, 1, fp);
 	fclose(fp);
 out:
 	if (fp)
