@@ -656,6 +656,85 @@ out:
 	return ret;
 }
 
+BOOL RegClean()
+{
+    HKEY hRegRoot;
+    HKEY hSubKey;
+    LONG rc;
+    LONG query;
+    DWORD dwIdIndex;
+    CHAR idName[64];
+    DWORD idSize = sizeof(idName);
+    CHAR video[64];
+    DWORD dwType = 0;
+    CHAR lpDesc[256]; 
+    DWORD dwSize= sizeof(lpDesc);
+
+    rc = RegOpenKeyEx(HKEY_LOCAL_MACHINE,
+						"SYSTEM\\CurrentControlSet\\Control\\Video",
+						0,
+						KEY_ALL_ACCESS,
+						&hRegRoot);
+    
+    if (rc != ERROR_SUCCESS) {
+        logError("RegClean Open Root Key Failed:%x, %d\n", GetLastError(), rc);
+        return FALSE;
+    }
+
+    dwIdIndex = 0;
+    do {
+        query = RegEnumKeyEx(hRegRoot,
+                            dwIdIndex,
+                            &idName[0],
+                            &idSize,
+                            0,
+                            NULL,
+                            NULL,
+                            NULL);
+        idSize = sizeof(idName);
+        dwIdIndex++;
+
+        sprintf(video, "%s\\Video", idName);
+        rc = RegOpenKeyEx(hRegRoot,
+                            video,
+                            0,
+                            KEY_QUERY_VALUE,
+                            &hSubKey);
+        if (rc != ERROR_SUCCESS) {
+            logError("RegClean Open Sub Key Failed: %x, %d\n", GetLastError(), rc);
+				continue;
+        }
+        rc = RegQueryValueEx(hSubKey,
+                "Service",
+                0,
+                &dwType,
+                (PBYTE)&lpDesc,
+                &dwSize);
+        // Don't need to do this Check.
+#if 0
+        if (rc != ERROR_SUCCESS) {
+            printf("Query Reg Sub Key Desc Failed:%x\n", GetLastError());
+            goto QuerySubKeyFailed;
+        }
+#endif
+        dwSize= sizeof(lpDesc);
+        if (dwType == REG_SZ) {
+            if (stricmp(lpDesc, DRIVER_NAME) == 0) {
+        		RegCloseKey(hSubKey);
+				hSubKey = NULL;
+				rc = RegDeleteTree(hRegRoot, idName);
+				logInfo("RegClean %s %x %d\n", idName, GetLastError(), rc);
+			}
+        }
+		if (hSubKey) {
+        	RegCloseKey(hSubKey);
+		}
+    } while (query != ERROR_NO_MORE_ITEMS);
+    RegCloseKey(hRegRoot);
+
+    return TRUE;
+}
+
 int __cdecl _tmain(int argc, _TCHAR *argv[])
 {
 	HDEVINFO h = NULL;
@@ -696,6 +775,7 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 			printf("Driver already installed\n");
 			goto out;
 		}
+		RegClean();
 		InstallInf(INF);
 		if (isVista || isWin7) {
 			DisableMirror();
@@ -706,11 +786,12 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 			printf("Driver not found\n");
 		} else {
 			UnInstallDriver(h, &dev_info_data);
+			if (isVista || isWin7) {
+				CleanOemInf();
+			}
+			RegClean();
+			printf("Please Reboot System\n");
 		}
-		if (isVista || isWin7) {
-			CleanOemInf();
-		}
-		printf("Please Reboot System\n");
 	} else {
 		usage(argv);
 	}
