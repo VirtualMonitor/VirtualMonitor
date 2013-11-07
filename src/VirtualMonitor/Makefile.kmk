@@ -62,7 +62,8 @@ VirtualMonitor_SOURCES = \
 # Trick Fix Me later :)
 $(PATH_SUB_CURRENT)/VNCDisplay.cpp: FORCE
 	$(QUIET)$(MKDIR) -p $(PATH_OUT)/bin/webclients
-	$(QUIET)$(CP) -R -L -f  $(PATH_ROOT)/src/libs/libvnc-0.9.9/webclients $(PATH_OUT)/bin/
+	$(QUIET)$(CP) -R -L -f  $(PATH_ROOT)/src/libs/libvnc-0.9.9/webclients/index.vnc $(PATH_OUT)/bin/webclients
+	$(QUIET)$(CP) -R -L -f  $(PATH_ROOT)/src/libs/libvnc-0.9.9/webclients/novnc $(PATH_OUT)/bin/webclients
 
 VirtualMonitor_SOURCES.win = XpdmDrvIntf.cpp
 VirtualMonitor_SOURCES.win += VirtualMonitor.rc
