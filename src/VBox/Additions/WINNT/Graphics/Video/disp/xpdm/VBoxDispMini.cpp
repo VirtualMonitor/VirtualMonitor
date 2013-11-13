@@ -417,3 +417,37 @@ int VBoxDispMPUnshareVideoMemory(HANDLE hDriver, PVIDEO_SHARE_MEMORY pSMem)
     LOGF_LEAVE();
     return VINF_SUCCESS;
 }
+
+/* Map device framebuffer and VRAM to our virtual address space */
+int DispMPMapMemory(PVBOXDISPDEV pDev, PVIDEO_MEMORY_INFORMATION pMemInfo)
+{
+    DWORD dwrc;
+    ULONG cbReturned;
+	PVOID ring3Base;
+
+    LOGF_ENTER();
+
+    dwrc = EngDeviceIoControl(pDev->hDriver, IOCTL_VIDEO_RING3_MAP, pMemInfo, sizeof(*pMemInfo), &ring3Base, sizeof(&ring3Base), &cbReturned);
+    VBOX_CHECK_WINERR_RETRC(dwrc, VERR_DEV_IO_ERROR);
+    VBOX_WARN_IOCTLCB_RETRC("IOCTL_VIDEO_RING3_MAP", cbReturned, sizeof(pMemInfo), VERR_DEV_IO_ERROR);
+	pDev->ring3Base = ring3Base;
+
+    LOGF_LEAVE();
+    return VINF_SUCCESS;
+
+}
+
+int DispMPUnmapMemory(PVBOXDISPDEV pDev)
+{
+    DWORD dwrc;
+    ULONG cbReturned;
+
+    LOGF_ENTER();
+
+    dwrc = EngDeviceIoControl(pDev->hDriver, IOCTL_VIDEO_RING3_UNMAP, &pDev->ring3Base, sizeof(&pDev->ring3Base), NULL, 0, &cbReturned);
+    VBOX_CHECK_WINERR_RETRC(dwrc, VERR_DEV_IO_ERROR);
+	pDev->ring3Base = NULL;
+
+    LOGF_LEAVE();
+    return VINF_SUCCESS;
+}

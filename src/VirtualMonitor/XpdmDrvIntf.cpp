@@ -139,17 +139,11 @@ int XpdmDrvIntf::SetDisplayMode(uint32_t xRes, uint32_t yRes, uint32_t bpp)
     if (!xRes || !yRes || !bpp) {
         return -1;
     }
-    if (pPixels) {
-        delete pPixels;
-    }
-    pixelsLen = xRes * yRes * ((bpp+7)/8);
-    pPixels = new uint8_t[pixelsLen];
-    Assert(pPixels);
-
     this->xRes = xRes; 
     this->yRes = yRes; 
     this->bpp = bpp; 
 
+    pixelsLen = xRes * yRes * ((bpp+7)/8);
     rc = RegSetValueEx(hKey, 
             "CustomMode0Width",
             0,
@@ -208,7 +202,7 @@ BOOL XpdmDrvIntf::FindDeviceName()
 
     // First enumerate for Primary display device:
     while ((result = EnumDisplayDevices(NULL, devNum, &displayDevice, 0))) {
-#if 0
+#if 1
 		printf("%s, name: %s\n\tid: %s\n\t key: %s\n",
 				&displayDevice.DeviceString[0],
 				&displayDevice.DeviceName[0],
@@ -310,6 +304,15 @@ int XpdmDrvIntf::Disable()
     DEVMODE defaultMode;
     INT code;
 
+	if (pVideoMemory) {
+        printf("%s: %d\n", __FUNCTION__, __LINE__);
+		ExtEscape(hDC,
+				   VM_CTL_UNMAP_VIDEO_MEMORY,
+                   sizeof(pVideoMemory), 
+                   (LPSTR)&pVideoMemory, 
+                   0, 
+                   NULL);
+	}
     ZeroMemory(&defaultMode, sizeof(DEVMODE));
     defaultMode.dmSize = sizeof(DEVMODE);
         defaultMode.dmDriverExtra = 0;
@@ -363,10 +366,8 @@ BOOL XpdmDrvIntf::XpdmDrvCtrlReStart()
 
     hDC = CreateDC(NULL, deviceName, NULL, NULL);
     if (hDC == NULL) {
-        printf("%s: %d\n", __FUNCTION__, __LINE__);
         return FALSE;
     }
-
     rc = ExtEscape(hDC,
                    VM_CTL_SET_EVENT,
                    sizeof(events.event), 
@@ -374,7 +375,6 @@ BOOL XpdmDrvIntf::XpdmDrvCtrlReStart()
                    0, 
                    NULL);
     if (rc < 0) {
-        printf("%s: %d\n", __FUNCTION__, __LINE__);
         return FALSE;
     }
     return TRUE;
@@ -398,15 +398,17 @@ int XpdmDrvIntf::GetEvent(Event &evt)
             if (ret < sizeof(dirtyRect)) {
                 continue;
             }
-            ret = ExtEscape(hDC,
-                        VM_CTL_UPDATE_DIRTY_EARA,
-                        sizeof(dirtyRect),
-                        (LPSTR)&dirtyRect,
-                        pixelsLen,
-                        (LPSTR)pPixels);
-            if (ret <= 0) {
-                continue;
-            }
+			if (!pVideoMemory) {
+				ret = ExtEscape(hDC,
+							VM_CTL_UPDATE_DIRTY_EARA,
+							sizeof(dirtyRect),
+							(LPSTR)&dirtyRect,
+							pixelsLen,
+							(LPSTR)pPixels);
+				if (ret <= 0) {
+					continue;
+				}
+			}
             evt.code = EVENT_DITRY_AREA;
             evt.dirtyArea.left = dirtyRect.left;
             evt.dirtyArea.top = dirtyRect.top;
@@ -444,6 +446,7 @@ int XpdmDrvIntf::ForceUpDate(uint32_t left, uint32_t top, uint32_t right, uint32
                     (LPSTR)&d,
                     pixelsLen,
                     (LPSTR)pPixels);
+
     return ret;
 }
 
@@ -520,6 +523,28 @@ int XpdmDrvIntf::AeroCtrl(BOOL enable)
 	}
 	return ret;
 }
+
+char *XpdmDrvIntf::GetVideoMemory()
+{
+    LONG rc;
+    rc = ExtEscape(hDC,
+                   VM_CTL_MAP_VIDEO_MEMORY,
+                   0, 
+                   NULL, 
+                   sizeof(pVideoMemory), 
+                   (LPSTR)&pVideoMemory);
+    if (rc < 0) {
+        printf("%s: %d\n", __FUNCTION__, __LINE__);
+        return NULL;
+    }
+	if (!pVideoMemory) {
+    	pPixels = new uint8_t[pixelsLen];
+    	Assert(pPixels);
+    }
+
+	return (char*)pVideoMemory;
+}
+
 
 int XpdmDrvIntf::Init(DisplayParam &param)
 {

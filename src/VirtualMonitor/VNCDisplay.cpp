@@ -1,6 +1,6 @@
 #include "VNCDisplay.h"
 
-int VNCDisplay::Init(DisplayParam &param)
+int VNCDisplay::Init(DisplayParam &param, char *pVideoMemory)
 {
     int rc;
 
@@ -12,7 +12,12 @@ int VNCDisplay::Init(DisplayParam &param)
         delete pPixels;
     }
     pixelsLen = xRes * yRes * ((bpp+7)/8);
-    pPixels = new uint8_t[pixelsLen];
+	if (!pVideoMemory)
+    	pPixels = new uint8_t[pixelsLen];
+	else {
+		shareMemory = true;
+		pPixels = (uint8_t *)pVideoMemory;
+	}
     Assert(pPixels);
 
     vncServer = rfbGetScreen(0, NULL, xRes, yRes, 8, 3, VNC_SIZEOFRGBA);
@@ -169,11 +174,11 @@ void VNCDisplay::vncKeyboardEvent(rfbBool down, rfbKeySym keycode, rfbClientPtr 
     VNCDisplay *instance = static_cast<VNCDisplay*>(cl->screen->screenData);
 }
 
-Display *VNCDisplayProbe(DisplayParam &param)
+Display *VNCDisplayProbe(DisplayParam &param, char* videoMemory)
 {
     VNCDisplay *vnc = new VNCDisplay();
     Assert(vnc);
-    if (vnc->Init(param)) {
+    if (vnc->Init(param, videoMemory)) {
         printf("VNC Display Init Failed\n");
         delete vnc;
         return NULL;
@@ -216,7 +221,7 @@ int VNCDisplay::Update(uint32_t left, uint32_t top, uint32_t right, uint32_t bot
 
 VNCDisplay::~VNCDisplay()
 {
-    if (pPixels) {
+    if (!shareMemory && pPixels) {
         delete pPixels;
     }
 }

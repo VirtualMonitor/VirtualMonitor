@@ -27,9 +27,9 @@ typedef struct _DisplayParam {
 
 class Display {
 public:
-    Display () { xRes = yRes = bpp = pixelsLen = 0; pPixels = NULL;};
+    Display () { xRes = yRes = bpp = pixelsLen = 0; pPixels = NULL; shareMemory = false;};
     virtual ~Display() { };
-    virtual int Init(DisplayParam &param) = 0;
+    virtual int Init(DisplayParam &param, char *pVideoMemory) = 0;
     virtual int Start() = 0;
     virtual int Stop() = 0;
     virtual int Update(uint32_t left, uint32_t top, uint32_t right, uint32_t bottom) = 0;
@@ -42,6 +42,7 @@ protected:
     uint32_t xRes;
     uint32_t yRes;
     uint32_t bpp;
+	bool shareMemory;
 };
 
 #endif /* __DISPLAY_H__ */

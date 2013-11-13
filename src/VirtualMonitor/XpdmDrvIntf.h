@@ -18,6 +18,8 @@
 #define VM_CTL_UPDATE_DIRTY_EARA          (VM_CTL_CODE_START+5)
 #define VM_CTL_GET_POINTER_SHAPE_EVENT    (VM_CTL_CODE_START+6)
 #define VM_CTL_GET_POINTER_MOVE_EVENT     (VM_CTL_CODE_START+7)
+#define VM_CTL_MAP_VIDEO_MEMORY	          (VM_CTL_CODE_START+8)
+#define VM_CTL_UNMAP_VIDEO_MEMORY         (VM_CTL_CODE_START+9)
 
 static LPSTR dispCode[7] = {
    "Change Successful",
@@ -72,6 +74,7 @@ public:
     virtual int Disable();
     virtual int GetEvent(Event &evt);
     virtual int CopyDirtyPixels(uint8_t *dst, uint32_t left, uint32_t top, uint32_t right, uint32_t bottom);
+	virtual char *GetVideoMemory();
 
 private:
 	HKEY hKey;
@@ -82,6 +85,7 @@ private:
     struct EventArray events;
     CHAR deviceName[DEVICE_NAME_SIZE];
 	OSVERSIONINFO osvi;
+	PVOID pVideoMemory;
 
     LPSTR GetDispCode(INT code);
     BOOL OpenDeviceRegistryKey();

@@ -37,7 +37,7 @@ class VNCDisplay : public Display {
 public:
     VNCDisplay() {};
     virtual ~VNCDisplay();
-    virtual int Init(DisplayParam &param);
+    virtual int Init(DisplayParam &param, char *pVideoMemory);
     virtual int Start();
     virtual int Stop();
     virtual int Update(uint32_t left, uint32_t top, uint32_t right, uint32_t bottom);

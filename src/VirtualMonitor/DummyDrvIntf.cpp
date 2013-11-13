@@ -19,6 +19,7 @@ public:
     virtual int Disable();
     virtual int GetEvent(Event &evt);
     virtual int CopyDirtyPixels(uint8_t *dst, uint32_t left, uint32_t top, uint32_t right, uint32_t bottom);
+	virtual char *GetVideoMemory();
 
 private:
     uint8_t *pPixels;
@@ -135,6 +136,11 @@ int DummyDrvIntf::SetDisplayMode(uint32_t xRes, uint32_t yRes, uint32_t bpp)
     this->bpp = bpp; 
 
 	return 0;
+}
+
+char *DummyDrvIntf::GetVideoMemory()
+{
+	return NULL;
 }
 
 int DummyDrvIntf::Init(DisplayParam &param)

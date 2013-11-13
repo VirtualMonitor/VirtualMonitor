@@ -1193,6 +1193,25 @@ ULONG APIENTRY VBoxDispDrvEscape(SURFOBJ *pso, ULONG iEsc, ULONG cjIn, PVOID pvI
             p->y = pDev->pointerY;
             return sizeof(*p); 
         }
+		case VM_CTL_MAP_VIDEO_MEMORY:
+		{
+			PVOID p;
+            if (!pvOut || cjOut < sizeof(p)) {
+                return -1;
+            }
+			p = pvOut;
+			DispMPMapMemory(pDev, &pDev->memInfo);
+			memcpy(p, &pDev->ring3Base, sizeof(pDev->ring3Base));
+			LOG(("%s %d %p\n", __FUNCTION__, __LINE__, pDev->memInfo.FrameBufferBase));
+
+			return 0;
+		}
+		case VM_CTL_UNMAP_VIDEO_MEMORY:
+		{
+			DispMPUnmapMemory(pDev);
+			return 0;
+		}
+
         default:
         {
             LOG(("unsupported iEsc %#x", iEsc));

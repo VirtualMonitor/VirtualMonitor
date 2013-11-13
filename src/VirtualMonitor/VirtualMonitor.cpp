@@ -34,7 +34,7 @@ struct VirtualMonitorDrvObj DrvObj[] = {
 };
 
 
-extern Display *VNCDisplayProbe(DisplayParam &param);
+extern Display *VNCDisplayProbe(DisplayParam &param, char *videoMemory);
 struct DisplayIntfObj displayIntf[] = {
     { VNCDisplayProbe, "VNC Display"},
 };
@@ -97,6 +97,7 @@ int VirtualMonitorMain(DisplayParam cmd)
 {
 	int i = 0;
 	int total = RT_ELEMENTS(DrvObj);
+	char *videoMemory;
 	if (cmd.enableDummyDriver) {
 		i = RT_ELEMENTS(DrvObj) - 1;
 	} else {
@@ -126,20 +127,23 @@ int VirtualMonitorMain(DisplayParam cmd)
 		goto unsupport;
 	}
     drvIntfObj->Enable();
+	videoMemory = drvIntfObj->GetVideoMemory();
 
     Display *disp;
     for (int i = 0; i < RT_ELEMENTS(displayIntf); i++) {
-        disp = displayIntf[i].pfnDispIntfProbe(cmd);
-        RTPrintf("Create %s %s\n", displayIntf[i].IntfDesc, disp ? "Successful" : "Failed");
+        disp = displayIntf[i].pfnDispIntfProbe(cmd, videoMemory);
+        RTPrintf("Create %s %s %p\n", displayIntf[i].IntfDesc, disp ? "Successful" : "Failed", videoMemory);
         if (disp) {
             displayIntfObj[displayIntfCnt] = disp;
             displayIntfCnt++;
             disp->Start();
-            drvIntfObj->CopyDirtyPixels(disp->pPixels,
-                                        0,
-                                        0,
-                                        cmd.x,
-                                        cmd.y);
+			if (!videoMemory) {
+				drvIntfObj->CopyDirtyPixels(disp->pPixels,
+											0,
+											0,
+											cmd.x,
+											cmd.y);
+			}
             disp->Update(0, 0, cmd.x, cmd.y);
         }
     }
@@ -157,11 +161,14 @@ int VirtualMonitorMain(DisplayParam cmd)
 #endif
             for (int i = 0; i < displayIntfCnt; i++) {
                 disp = displayIntfObj[i];
-                drvIntfObj->CopyDirtyPixels(disp->pPixels,
-                                            evt.dirtyArea.left,
-                                            evt.dirtyArea.top,
-                                            evt.dirtyArea.right,
-                                            evt.dirtyArea.bottom);
+
+				if (!videoMemory) {
+					drvIntfObj->CopyDirtyPixels(disp->pPixels,
+												evt.dirtyArea.left,
+												evt.dirtyArea.top,
+												evt.dirtyArea.right,
+												evt.dirtyArea.bottom);
+				}
                 disp->Update(evt.dirtyArea.left,
                              evt.dirtyArea.top,
                              evt.dirtyArea.right,
@@ -175,7 +182,6 @@ int VirtualMonitorMain(DisplayParam cmd)
 
     drvIntfObj->Disable();
 unsupport:
-    delete drvIntfObj;
 
     for (int i = 0; i < displayIntfCnt; i++) {
         disp = displayIntfObj[i];
@@ -183,6 +189,7 @@ unsupport:
         delete disp;
     }
 
+    delete drvIntfObj;
     return 0;
 }
 

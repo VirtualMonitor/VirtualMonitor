@@ -177,6 +177,8 @@ typedef struct _VBOXMP_DEVEXT
 
    HGSMIAREA areaDisplay;                      /* Entire VRAM chunk for this display device. */
    BOOLEAN fAnyX;                              /* Unrestricted horizontal resolution flag. */
+   PVOID pMdl;
+   PVOID ring3Base;
 } VBOXMP_DEVEXT, *PVBOXMP_DEVEXT;
 
 DECLINLINE(PVBOXMP_DEVEXT) VBoxCommonToPrimaryExt(PVBOXMP_COMMON pCommon)

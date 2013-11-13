@@ -39,4 +39,6 @@ int VBoxDispMPResetDevice(HANDLE hDriver);
 int VBoxDispMPShareVideoMemory(HANDLE hDriver, PVIDEO_SHARE_MEMORY pSMem, PVIDEO_SHARE_MEMORY_INFORMATION pSMemInfo);
 int VBoxDispMPUnshareVideoMemory(HANDLE hDriver, PVIDEO_SHARE_MEMORY pSMem);
 
+int DispMPMapMemory(PVBOXDISPDEV pDev, PVIDEO_MEMORY_INFORMATION pMemInfo);
+int DispMPUnmapMemory(PVBOXDISPDEV pDev);
 #endif /*VBOXDISPMINI_H*/

@@ -45,6 +45,7 @@ public:
     virtual int Disable() = 0;
     virtual int GetEvent(Event &evt) = 0;
     virtual int CopyDirtyPixels(uint8_t *dst, uint32_t left, uint32_t top, uint32_t right, uint32_t bottom) = 0;
+	virtual char *GetVideoMemory() = 0;
 
 protected:
     uint32_t xRes;

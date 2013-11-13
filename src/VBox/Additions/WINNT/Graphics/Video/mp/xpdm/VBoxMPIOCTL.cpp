@@ -634,3 +634,66 @@ BOOLEAN VBoxMPVhwaQueryInfo(PVBOXMP_DEVEXT pExt, VHWAQUERYINFO *pInfo, PSTATUS_B
     return bRC;
 }
 #endif
+
+typedef CCHAR KPROCESSOR_MODE;
+
+typedef enum _MODE {
+    KernelMode,
+    UserMode,
+    MaximumMode
+} MODE;
+typedef enum _MM_PAGE_PRIORITY {
+    LowPagePriority,
+    NormalPagePriority = 16,
+    HighPagePriority = 32
+} MM_PAGE_PRIORITY;
+
+
+extern "C" {
+	extern PVOID IoAllocateMdl(PVOID VirtualAddress, ULONG Length, BOOLEAN SecondaryBuffer, BOOLEAN ChargeQuota, PVOID Irp);
+	extern VOID MmBuildMdlForNonPagedPool(PVOID MemoryDescriptorList);
+	extern PVOID MmMapLockedPagesSpecifyCache(
+		PVOID MemoryDescriptorList,
+		KPROCESSOR_MODE AccessMode,
+		MEMORY_CACHING_TYPE CacheType,
+		PVOID BaseAddress,
+		ULONG BugCheckOnFailure,
+		MM_PAGE_PRIORITY Priority);
+	extern VOID MmUnmapLockedPages(PVOID BaseAddress, PVOID MemoryDescriptorList);
+}
+
+BOOLEAN MPRing3MapVideoMemeory(PVBOXMP_DEVEXT pExt, PVIDEO_MEMORY_INFORMATION pMapInfo,
+							PVOID *ring3Base,  PSTATUS_BLOCK pStatus)
+{
+	// VideoPortDebugPrint((enum VIDEO_DEBUG_LEVEL)0, "%s: %d, %p\n", __FUNCTION__, __LINE__, pMapInfo->FrameBufferBase);
+	PVOID pMdl = IoAllocateMdl(pMapInfo->FrameBufferBase, pMapInfo->FrameBufferLength, FALSE, FALSE, NULL);
+	if (!pMdl)
+		return FALSE;
+	// VideoPortDebugPrint((enum VIDEO_DEBUG_LEVEL)0, "%s: %d, pMdl: %p\n", __FUNCTION__, __LINE__, pMdl);
+	MmBuildMdlForNonPagedPool(pMdl);  
+	*ring3Base = MmMapLockedPagesSpecifyCache(pMdl, UserMode, MmCached, NULL, FALSE, NormalPagePriority);   
+	pExt->ring3Base = *ring3Base;
+	pExt->pMdl = pMdl;
+	// VideoPortDebugPrint((enum VIDEO_DEBUG_LEVEL)0, "%s: %d, ring3Base: %p\n", __FUNCTION__, __LINE__, *ring3Base);
+	pStatus->Status = NO_ERROR;
+	pStatus->Information = sizeof(PVOID);
+	return TRUE;
+}
+
+BOOLEAN MPRing3UnMapVideoMemeory(PVBOXMP_DEVEXT pExt, PVOID *ring3Base)
+{
+#if 0
+	VideoPortDebugPrint((enum VIDEO_DEBUG_LEVEL)0, "%s: %d, pMdl: %p, ring3Base: %p, %p\n",
+					__FUNCTION__, __LINE__, pExt->pMdl, pExt->ring3Base, *ring3Base);
+#endif
+	if (!pExt->ring3Base && !pExt->pMdl) {
+		return FALSE;
+	}
+	if (pExt->ring3Base != *ring3Base) {
+		VideoPortDebugPrint((enum VIDEO_DEBUG_LEVEL)0, "pMdl: %p, ring3Base: %p, %p\n", pExt->pMdl, pExt->ring3Base, *ring3Base);
+	}
+	MmUnmapLockedPages(pExt->ring3Base, pExt->pMdl);
+	pExt->ring3Base = NULL;
+	pExt->pMdl = NULL;
+	return TRUE;
+}

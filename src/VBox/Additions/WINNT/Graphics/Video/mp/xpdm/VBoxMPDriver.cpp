@@ -553,7 +553,21 @@ VBoxDrvStartIO(PVOID HwDeviceExtension, PVIDEO_REQUEST_PACKET RequestPacket)
             bResult = TRUE;
             break;
         }
-
+		case IOCTL_VIDEO_RING3_MAP:
+		{
+            STARTIO_IN(VIDEO_MEMORY_INFORMATION, pMInfo);
+            STARTIO_OUT(PVOID, pUserAddr);
+			MPRing3MapVideoMemeory(pExt, pMInfo, pUserAddr, pStatus);
+			// VideoPortDebugPrint((enum VIDEO_DEBUG_LEVEL)0, "%s: %d, ring3Base: %p\n", __FUNCTION__, __LINE__, *pUserAddr);
+            bResult = TRUE;
+			break;
+		}
+		case IOCTL_VIDEO_RING3_UNMAP:
+		{
+            STARTIO_IN(PVOID, ring3Base);
+			bResult = MPRing3UnMapVideoMemeory(pExt, ring3Base);
+			break;
+		}
         default:
         {
             WARN(("unsupported IOCTL %p, fn(%#x)",

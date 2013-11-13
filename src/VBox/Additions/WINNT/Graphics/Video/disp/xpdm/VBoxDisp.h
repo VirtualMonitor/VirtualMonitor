@@ -145,6 +145,7 @@ typedef struct _VBOXDISPDEV
     FLONG flDrawingHooks;                    /* Enabled drawing hooks */
 
     VIDEO_MEMORY_INFORMATION memInfo;        /* Mapped Framebuffer/vram info */
+	PVOID ring3Base;						 /* VRAM mapped to User space */
     VBOXDISPVRAMLAYOUT layout;               /* VRAM layout information */
 
     VBOXDISPHGSMIINFO hgsmi;                 /* HGSMI Info */
