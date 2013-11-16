@@ -202,7 +202,7 @@ BOOL XpdmDrvIntf::FindDeviceName()
 
     // First enumerate for Primary display device:
     while ((result = EnumDisplayDevices(NULL, devNum, &displayDevice, 0))) {
-#if 1
+#if 0
 		printf("%s, name: %s\n\tid: %s\n\t key: %s\n",
 				&displayDevice.DeviceString[0],
 				&displayDevice.DeviceName[0],
@@ -284,13 +284,13 @@ int XpdmDrvIntf::Enable()
                     NULL); 
 
 
-    printf("Update Registry on device mode: %s\n", GetDispCode(code));
+    // printf("Update Registry on device mode: %s\n", GetDispCode(code));
     code = ChangeDisplaySettingsEx(NULL,
                     NULL,
                     NULL,
                     0,
                     NULL);
-    printf("Raw dynamic mode change on device mode: %s\n", GetDispCode(code));
+    // printf("Raw dynamic mode change on device mode: %s\n", GetDispCode(code));
 
     if (!XpdmDrvCtrlReStart()) {
         Disable();
@@ -305,7 +305,6 @@ int XpdmDrvIntf::Disable()
     INT code;
 
 	if (pVideoMemory) {
-        printf("%s: %d\n", __FUNCTION__, __LINE__);
 		ExtEscape(hDC,
 				   VM_CTL_UNMAP_VIDEO_MEMORY,
                    sizeof(pVideoMemory), 
@@ -331,13 +330,13 @@ int XpdmDrvIntf::Disable()
                     NULL); 
 
 
-    printf("Update Registry on device mode: %s\n", GetDispCode(code));
+    // printf("Update Registry on device mode: %s\n", GetDispCode(code));
     code = ChangeDisplaySettingsEx(NULL,
                     NULL,
                     NULL,
                     0,
                     NULL);
-    printf("Raw dynamic mode change on device mode: %s\n", GetDispCode(code));
+    // printf("Raw dynamic mode change on device mode: %s\n", GetDispCode(code));
 
 #if 1
     SetEvent(events.event[2]);

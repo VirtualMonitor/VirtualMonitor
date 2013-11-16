@@ -20,6 +20,7 @@ int VNCDisplay::Init(DisplayParam &param, char *pVideoMemory)
 	}
     Assert(pPixels);
 
+    rfbLogEnable(0);
     vncServer = rfbGetScreen(0, NULL, xRes, yRes, 8, 3, VNC_SIZEOFRGBA);
     Assert(vncServer);
 

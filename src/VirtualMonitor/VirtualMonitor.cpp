@@ -52,7 +52,7 @@ static BOOL CtrlHandler(DWORD fdwCtrlType)
     // Handle the CTRL-C signal. 
     case CTRL_C_EVENT: 
       drvIntfObj->Disable();
-      RTPrintf( "Ctrl-C event\n\n" );
+      // RTPrintf( "Ctrl-C event\n\n" );
       return( TRUE );
   }
   return TRUE;

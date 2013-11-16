@@ -967,6 +967,8 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 			DetectVirtualMonitor(TRUE);
 			printf("Driver installed Status: %x, problem: %x\n", status, problem);
 			printf("Please reboot your system\n");
+		} else {
+			printf("Driver installed successful\n");
 		}
 	} else if (!strcmp(argv[1], "-u")) {
 		if (!h) {
