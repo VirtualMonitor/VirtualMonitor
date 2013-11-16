@@ -157,6 +157,7 @@ enum rfbNewClientAction VNCDisplay::rfbNewClientEvent(rfbClientPtr cl)
     instance->uClients++;
 
     cl->clientGoneHook = &VNCDisplay::clientGoneHook;
+	cl->viewOnly = 1;
 
     return RFB_CLIENT_ACCEPT;
 }
