@@ -38,6 +38,7 @@ static void logError(const char *fmt, ...)
     va_start(args, fmt);
 	fprintf(g_logf, "Error: ");
     vfprintf(g_logf, fmt, args);
+	fflush(g_logf);
 }
 
 static void logInfo(const char *fmt, ...)
@@ -46,8 +47,15 @@ static void logInfo(const char *fmt, ...)
     va_start(args, fmt);
 	fprintf(g_logf, "Info: ");
     vfprintf(g_logf, fmt, args);
+	fflush(g_logf);
 }
 
+void logPrint(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+}
 
 int DoInstallNewDevice()
 {
@@ -139,7 +147,7 @@ int InstallInf(_TCHAR *inf)
 		goto FreeLib;
 	}
 #if 0
-	printf("{%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}\n",
+	logPrint("{%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}\n",
 			ClassGUID.Data1, ClassGUID.Data2, ClassGUID.Data3, ClassGUID.Data4[0],
 			ClassGUID.Data4[1], ClassGUID.Data4[2], ClassGUID.Data4[3], ClassGUID.Data4[4],
 			ClassGUID.Data4[5], ClassGUID.Data4[6], ClassGUID.Data4[7]);
@@ -353,9 +361,9 @@ int UnInstallDriver(HDEVINFO h, SP_DEVINFO_DATA *dev_info_data)
 
 static void usage(_TCHAR *argv[])
 {
-	printf("%s -i\t install driver\n", argv[0] );
-	printf("%s -u\t uninstall driver\n", argv[0]);
-	printf("%s -h\t show help\n", argv[0]);
+	logPrint("%s -i\t install driver\n", argv[0] );
+	logPrint("%s -u\t uninstall driver\n", argv[0]);
+	logPrint("%s -h\t show help\n", argv[0]);
 }
 
 static void GetWinVersion()
@@ -682,11 +690,11 @@ BOOL RegDelnodeRecurse (HKEY hKeyRoot, LPTSTR lpSubKey)
     if (lResult != ERROR_SUCCESS) 
     {
         if (lResult == ERROR_FILE_NOT_FOUND) {
-            printf("Key not found.\n");
+            logPrint("Key not found.\n");
             return TRUE;
         } 
         else {
-            printf("Error opening key.\n");
+            logPrint("Error opening key.\n");
             return FALSE;
         }
     }
@@ -821,7 +829,7 @@ BOOL RegClean()
         // Don't need to do this Check.
 #if 0
         if (rc != ERROR_SUCCESS) {
-            printf("Query Reg Sub Key Desc Failed:%x\n", GetLastError());
+            logPrint("Query Reg Sub Key Desc Failed:%x\n", GetLastError());
             goto QuerySubKeyFailed;
         }
 #endif
@@ -898,7 +906,7 @@ BOOL logInit()
 {
 	g_logf = fopen(INSTALL_LOG_FILE, "w+");
 	if (!g_logf) {
-		printf("Can't Open install log file\n");
+		logPrint("Can't Open install log file\n");
 		return FALSE;
 	}
 	logInfo("Windows version: %d.%d.%d.%d\n",
@@ -928,13 +936,13 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 
 	GetWinVersion();
 	if (!isSupport) {
-		printf("Unsupported Windows system\n");
+		logPrint("Unsupported Windows system\n");
 		goto out;
 	}
 	if (isVista || isWin7) {
 		if (!IsUserAnAdmin()) {
-			printf("Access Denied. Administrator permissions are needed to use the selected options.");
-			printf("Use an administrator command prompt to complete these tasks.");
+			logPrint("Access Denied. Administrator permissions are needed to use the selected options.");
+			logPrint("Use an administrator command prompt to complete these tasks.");
 			goto out;
 		}
 	}
@@ -945,12 +953,13 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 	h = GetDevInfoFromDeviceId(&dev_info_data, DRIVER_NAME);
 	if (!strcmp(argv[1], "-i")) {
 		if (h) {
-			printf("Driver already installed\n");
+			logPrint("Driver already installed\n");
 			goto out;
 		}
 		if (!logInit()) {
 			goto out;
 		}
+		logPrint("Installing driver, It may take few minutes. please wait\n");
 		RegClean();
 		InstallInf(INF);
 		if (isVista || isWin7) {
@@ -965,14 +974,17 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 		logInfo("Driver Status: %x, problem: %x\n", status, problem);
 		if (!bDevice) {
 			DetectVirtualMonitor(TRUE);
-			printf("Driver installed Status: %x, problem: %x\n", status, problem);
-			printf("Please reboot your system\n");
+			logPrint("Driver installed Status: %x, problem: %x\n", status, problem);
+			logPrint("Please reboot your system\n");
 		} else {
-			printf("Driver installed successful\n");
+			logPrint("Driver installed successful\n");
+		}
+		if (isVista || isWin7) {
+			logPrint("Please reboot your system\n");
 		}
 	} else if (!strcmp(argv[1], "-u")) {
 		if (!h) {
-			printf("Driver not found\n");
+			logPrint("Driver not found\n");
 		} else {
 			if (!logInit()) {
 				goto out;
@@ -982,7 +994,7 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 				CleanOemInf();
 			}
 			RegClean();
-			printf("Please Reboot System\n");
+			logPrint("Please Reboot System\n");
 		}
 	} else {
 		usage(argv);
