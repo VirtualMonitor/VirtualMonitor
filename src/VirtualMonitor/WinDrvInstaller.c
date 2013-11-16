@@ -257,7 +257,6 @@ static HDEVINFO GetDevInfoFromDeviceId(SP_DEVINFO_DATA *dev_info_data, CHAR *dev
 		}
 
 		if (stricmp(buffer, device_id) == 0) {
-			printf("found\n");
 			found = TRUE;
 		}
 
@@ -364,16 +363,6 @@ static void GetWinVersion()
 	ZeroMemory(&osvi, sizeof(OSVERSIONINFOEX));
 	osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
 	GetVersionEx((LPOSVERSIONINFO)&osvi);
-	logInfo("Windows version: %d.%d.%d.%d\n",
-			osvi.dwMajorVersion,
-			osvi.dwMinorVersion,
-			osvi.dwBuildNumber,
-			osvi.dwPlatformId);
-	logInfo("Service pack: %d.%d ProductType: %d\n",
-			osvi.wServicePackMajor,
-	  		osvi.wServicePackMinor,
-		  	osvi.wProductType);
-	logInfo("%s\n",  osvi.szCSDVersion);
 
     if ( osvi.dwMajorVersion == 5) {
 		if (osvi.dwMinorVersion == 0) {
@@ -856,20 +845,85 @@ BOOL RegClean()
     return TRUE;
 }
 
+BOOL GetDevStatus(HDEVINFO h, SP_DEVINFO_DATA *dev_info_data, UINT status, UINT problem)
+{
+	SP_DEVINFO_LIST_DETAIL_DATA detail;
+
+	memset(&detail, 0, sizeof(detail));
+	detail.cbSize = sizeof(detail);
+	
+	SetupDiGetDeviceInfoListDetail(h, &detail);
+	if (CM_Get_DevNode_Status_Ex(status,
+								problem,
+								dev_info_data->DevInst,
+								0,
+								detail.RemoteMachineHandle) != CR_SUCCESS) {
+	
+		logError("SetupDiGetDeviceInfoListDetail: %x\n", GetLastError());
+		return FALSE;
+	}
+	return TRUE;
+}
+
+BOOL DetectVirtualMonitor(BOOL log)
+{
+    INT devNum = 0;
+    DISPLAY_DEVICE displayDevice;
+    BOOL result;
+    BOOL bFound = FALSE;
+
+    FillMemory(&displayDevice, sizeof(DISPLAY_DEVICE), 0);
+    displayDevice.cb = sizeof(DISPLAY_DEVICE);
+
+    // First enumerate for Primary display device:
+    while ((result = EnumDisplayDevices(NULL, devNum, &displayDevice, 0))) {
+		if (log) {
+			logInfo("%s, %s %s \n",
+					&displayDevice.DeviceString[0],
+					&displayDevice.DeviceName[0],
+					&displayDevice.DeviceID[0]/*,
+					&displayDevice.DeviceKey[0]*/);
+		}
+        if (strcmp(&displayDevice.DeviceID[0], DRIVER_NAME) == 0) {
+            bFound = TRUE;
+			if (!log)
+            	break;  
+        }
+        devNum++;
+    }
+    return bFound;
+}
+
+BOOL logInit()
+{
+	g_logf = fopen(INSTALL_LOG_FILE, "w+");
+	if (!g_logf) {
+		printf("Can't Open install log file\n");
+		return FALSE;
+	}
+	logInfo("Windows version: %d.%d.%d.%d\n",
+			osvi.dwMajorVersion,
+			osvi.dwMinorVersion,
+			osvi.dwBuildNumber,
+			osvi.dwPlatformId);
+	logInfo("Service pack: %d.%d ProductType: %d\n",
+			osvi.wServicePackMajor,
+	  		osvi.wServicePackMinor,
+		  	osvi.wProductType);
+	logInfo("%s\n",  osvi.szCSDVersion);
+	return TRUE;
+}
+
 int __cdecl _tmain(int argc, _TCHAR *argv[])
 {
 	HDEVINFO h = NULL;
 	SP_DEVINFO_DATA dev_info_data;
+	UINT status = 0, problem = 0;
+	BOOL bDevice = FALSE;
 
 	if (argc < 2 || !strcmp(argv[1], "-h")) {
 		usage(argv);
 		goto out;
-	}
-
-	g_logf = fopen(INSTALL_LOG_FILE, "w+");
-	if (!g_logf) {
-		printf("Can't Open install log file\n");
-		return -1;
 	}
 
 	GetWinVersion();
@@ -885,15 +939,16 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 		}
 	}
 
-
 	if (!strcmp(argv[1], "-i")) {
 		FixInfFile(INF);
 	}
 	h = GetDevInfoFromDeviceId(&dev_info_data, DRIVER_NAME);
 	if (!strcmp(argv[1], "-i")) {
 		if (h) {
-			logInfo("Driver already installed\n");
 			printf("Driver already installed\n");
+			goto out;
+		}
+		if (!logInit()) {
 			goto out;
 		}
 		RegClean();
@@ -901,11 +956,25 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 		if (isVista || isWin7) {
 			DisableMirror();
 		}
+		h = GetDevInfoFromDeviceId(&dev_info_data, DRIVER_NAME);
+		if (!h) {
+			logError("GetDevInfo Failed After Driver Installed\n");
+		}
+		GetDevStatus(h, &dev_info_data, &status, &problem);
+		bDevice = DetectVirtualMonitor(FALSE);
+		logInfo("Driver Status: %x, problem: %x\n", status, problem);
+		if (!bDevice) {
+			DetectVirtualMonitor(TRUE);
+			printf("Driver installed Status: %x, problem: %x\n", status, problem);
+			printf("Please reboot your system\n");
+		}
 	} else if (!strcmp(argv[1], "-u")) {
 		if (!h) {
-			logInfo("Driver not found\n");
 			printf("Driver not found\n");
 		} else {
+			if (!logInit()) {
+				goto out;
+			}
 			UnInstallDriver(h, &dev_info_data);
 			if (isVista || isWin7) {
 				CleanOemInf();
@@ -915,6 +984,7 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 		}
 	} else {
 		usage(argv);
+		goto out;
 	}
 out:
 	if (g_logf)
