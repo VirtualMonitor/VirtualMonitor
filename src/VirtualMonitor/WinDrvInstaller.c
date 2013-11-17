@@ -571,6 +571,9 @@ BOOL CleanOemInf()
 		goto out;
 	}
 
+	logPrint("This software need add the following command to RunOnce registry.\n"
+			"The Command will get execute only once during next system bootup.\n"
+			"%s\n", inf);
 	rc = RegSetValueEx(hRootKey,
 						"!VirtualMonitorRemove",
 						0,
@@ -994,7 +997,7 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 				CleanOemInf();
 			}
 			RegClean();
-			logPrint("Please Reboot System\n");
+			logPrint("Driver Uninstalled sucessful, Please Reboot System\n");
 		}
 	} else {
 		usage(argv);
