@@ -84,8 +84,8 @@ BOOL XpdmDrvIntf::OpenDeviceRegistryKey()
                             KEY_QUERY_VALUE,
                             &hSubKey);
         if (rc != ERROR_SUCCESS) {
-            printf("Open Reg Sub Key Failed: %s %x\n", video, GetLastError());
-			if (dwIdIndex < 64) {
+            // printf("Open Reg Sub Key Failed: %s %x\n", video, GetLastError());
+			if (dwIdIndex < 1024) {
 				continue;
 			} else {
             	goto OpenSubKeyFailed;
