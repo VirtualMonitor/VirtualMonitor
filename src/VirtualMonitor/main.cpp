@@ -11,6 +11,8 @@
 #include <iprt/string.h>
 #include <iprt/thread.h>
 #include <iprt/net.h>
+#include "product-generated.h"
+#include "version-generated.h"
 
 
 #include "Display.h"
@@ -27,6 +29,7 @@ void Usage()
     RTPrintf("-p6 Number\t listen on specify IPv4 port\n");
     RTPrintf("-dummy\t use dummy driver, this option is for developer\n");
     RTPrintf("-tf filename\t use filename as input pixel, this option is for developer\n");
+    RTPrintf("-v \t show version information\n");
     RTPrintf("-h \t show this help message\n");
 	RTPrintf("\n example\n");
 	RTPrintf("VirtualMonitor -x 300 -y 400\n");
@@ -97,6 +100,10 @@ int decode_cmd(int argc, char **argv)
 			cmdParam.enableDummyDriver = true;
         } else if (strcmp(argv[i], "-dummy") == 0) { /* use dummy Driver */
 			cmdParam.enableDummyDriver = true;
+		} else if (strcmp(argv[i], "-v") == 0) {
+			RTPrintf("%s Version: %d.%d.%d\n", VBOX_PRODUCT,
+				VBOX_VERSION_MAJOR, VBOX_VERSION_MINOR, VBOX_VERSION_BUILD);
+			exit(0);
 		}
     }
     if (cmdParam.x == 0) {
