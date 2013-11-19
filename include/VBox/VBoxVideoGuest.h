@@ -39,7 +39,7 @@ RT_C_DECLS_BEGIN
 # include <Video.h>
 RT_C_DECLS_END
 #else
-# include <iprt/asm-amd64-x86.h>
+// # include <iprt/asm-amd64-x86.h>
 #endif
 
 #ifdef VBOX_WDDM_MINIPORT
@@ -124,7 +124,7 @@ DECLINLINE(void) VBoxVideoCmnPortWriteUchar(RTIOPORT Port, uint8_t Value)
 #ifdef VBOX_XPDM_MINIPORT
     VideoPortWritePortUchar((PUCHAR)Port, Value);
 #else  /** @todo make these explicit */
-    ASMOutU8(Port, Value);
+    // ASMOutU8(Port, Value);
 #endif
 }
 
@@ -134,7 +134,7 @@ DECLINLINE(void) VBoxVideoCmnPortWriteUshort(RTIOPORT Port, uint16_t Value)
 #ifdef VBOX_XPDM_MINIPORT
     VideoPortWritePortUshort((PUSHORT)Port,Value);
 #else
-    ASMOutU16(Port, Value);
+    // ASMOutU16(Port, Value);
 #endif
 }
 
@@ -144,7 +144,7 @@ DECLINLINE(void) VBoxVideoCmnPortWriteUlong(RTIOPORT Port, uint32_t Value)
 #ifdef VBOX_XPDM_MINIPORT
     VideoPortWritePortUlong((PULONG)Port,Value);
 #else
-    ASMOutU32(Port, Value);
+    // ASMOutU32(Port, Value);
 #endif
 }
 
@@ -154,7 +154,8 @@ DECLINLINE(uint8_t) VBoxVideoCmnPortReadUchar(RTIOPORT Port)
 #ifdef VBOX_XPDM_MINIPORT
     return VideoPortReadPortUchar((PUCHAR)Port);
 #else
-    return ASMInU8(Port);
+    // return ASMInU8(Port);
+    return 0;
 #endif
 }
 
@@ -164,7 +165,8 @@ DECLINLINE(uint16_t) VBoxVideoCmnPortReadUshort(RTIOPORT Port)
 #ifdef VBOX_XPDM_MINIPORT
     return VideoPortReadPortUshort((PUSHORT)Port);
 #else
-    return ASMInU16(Port);
+    // return ASMInU16(Port);
+    return 0;
 #endif
 }
 
@@ -174,7 +176,8 @@ DECLINLINE(uint32_t) VBoxVideoCmnPortReadUlong(RTIOPORT Port)
 #ifdef VBOX_XPDM_MINIPORT
     return VideoPortReadPortUlong((PULONG)Port);
 #else
-    return ASMInU32(Port);
+    // return ASMInU32(Port);
+    return 0;
 #endif
 }
 

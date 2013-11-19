@@ -29,7 +29,7 @@ int VBoxDispMPUnmapMemory(PVBOXDISPDEV pDev);
 int VBoxDispMPQueryHGSMIInfo(HANDLE hDriver, QUERYHGSMIRESULT *pInfo);
 int VBoxDispMPQueryHGSMICallbacks(HANDLE hDriver, HGSMIQUERYCALLBACKS *pCallbacks);
 int VBoxDispMPHGSMIQueryPortProcs(HANDLE hDriver, HGSMIQUERYCPORTPROCS *pPortProcs);
-int VBoxDispMPVHWAQueryInfo(HANDLE hDriver, VHWAQUERYINFO *pInfo);
+// int VBoxDispMPVHWAQueryInfo(HANDLE hDriver, VHWAQUERYINFO *pInfo);
 int VBoxDispMPSetColorRegisters(HANDLE hDriver, PVIDEO_CLUT pClut, DWORD cbClut);
 int VBoxDispMPDisablePointer(PVBOXDISPDEV pDev);
 int VBoxDispMPSetPointerPosition(PVBOXDISPDEV pDev, PVIDEO_POINTER_POSITION pPos);

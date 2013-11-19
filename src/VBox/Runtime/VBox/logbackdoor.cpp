@@ -29,7 +29,7 @@
 *******************************************************************************/
 #include <VBox/log.h>
 #include "internal/iprt.h"
-#include <iprt/asm-amd64-x86.h>
+// #include <iprt/asm-amd64-x86.h>
 #include <iprt/string.h>
 #ifdef IN_GUEST_R3
 # include <VBox/VBoxGuestLib.h>
@@ -63,7 +63,11 @@ RT_EXPORT_SYMBOL(RTLogBackdoorPrintf);
 
 RTDECL(size_t) RTLogBackdoorPrintfV(const char *pszFormat, va_list args)
 {
+#ifdef IN_GUEST_R0
+    return 0;
+#else
     return RTLogFormatV(rtLogBackdoorOutput, NULL, pszFormat, args);
+#endif
 }
 
 RT_EXPORT_SYMBOL(RTLogBackdoorPrintfV);
@@ -85,11 +89,13 @@ RTDECL(void) RTLogWriteUser(const char *pch, size_t cb)
 #ifdef IN_GUEST_R3
     VbglR3WriteLog(pch, cb);
 #else  /* !IN_GUEST_R3 */
+#if 0
     const uint8_t *pau8 = (const uint8_t *)pch;
     if (cb > 1)
         ASMOutStrU8(RTLOG_DEBUG_PORT, pau8, cb);
     else if (cb)
         ASMOutU8(RTLOG_DEBUG_PORT, *pau8);
+#endif
 #endif /* !IN_GUEST_R3 */
 }
 

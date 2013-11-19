@@ -18,7 +18,7 @@
 
 #include "VBoxDisp.h"
 #include "VBoxDispMini.h"
-#include <iprt/asm.h>
+// #include <iprt/asm.h>
 
 /* Returns if given video mode is supported by display driver */
 static BOOL VBoxDispVideoModeSupported(const PVIDEO_MODE_INFORMATION pMode)
@@ -200,12 +200,14 @@ int VBoxDispMPMapMemory(PVBOXDISPDEV pDev, PVIDEO_MEMORY_INFORMATION pMemInfo)
     /* Check if we can access mapped memory */
     uint32_t magic = (*(ULONG *)vMemInfo.FrameBufferBase == 0xDEADF00D) ? 0xBAADF00D : 0xDEADF00D;
 
+#if 0
     ASMAtomicWriteU32((uint32_t *)vMemInfo.FrameBufferBase, magic);
     if (ASMAtomicReadU32((uint32_t *)vMemInfo.FrameBufferBase) != magic)
     {
         WARN(("can't write to framebuffer memory!"));
         return VERR_GENERAL_FAILURE;
     }
+#endif
 
     memcpy(pMemInfo, &vMemInfo, sizeof(vMemInfo));
 
@@ -278,6 +280,7 @@ int VBoxDispMPHGSMIQueryPortProcs(HANDLE hDriver, HGSMIQUERYCPORTPROCS *pPortPro
     return VINF_SUCCESS;
 }
 
+#if 0
 int VBoxDispMPVHWAQueryInfo(HANDLE hDriver, VHWAQUERYINFO *pInfo)
 {
     DWORD dwrc;
@@ -293,6 +296,7 @@ int VBoxDispMPVHWAQueryInfo(HANDLE hDriver, VHWAQUERYINFO *pInfo)
     LOGF_LEAVE();
     return VINF_SUCCESS;
 }
+#endif
 
 int VBoxDispMPSetColorRegisters(HANDLE hDriver, PVIDEO_CLUT pClut, DWORD cbClut)
 {

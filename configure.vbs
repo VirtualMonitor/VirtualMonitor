@@ -2282,24 +2282,57 @@ Sub CopyAllFile(SrcDir, DstDir)
    Set fso = Nothing
 end sub
 
+Sub CopyOneFile(Src, Dst)
+   Src=DosSlashes(Src)
+   Dst=DosSlashes(Dst)
+   Set fso = CreateObject("Scripting.FileSystemObject")
+   arr = split(Dst, "\")
+   path = ""
+   For Each dir In arr
+     If path <> "" Then path = path & "\"
+     path = path & dir
+     If fso.FolderExists(path) = False Then fso.CreateFolder(path)
+   Next
+   Print "Copying " &  Src & " to " & Dst 
+   fso.copyFile Src, Dst
+   Set fso = Nothing
+end sub
+
+
 sub CopyXPDMSource
    dim src, dst
    src = g_strPath & "/src/VBox/Additions/WINNT/Graphics/Video/mp/xpdm"
-   dst = g_strPath & "/out/nmake/xpdm/"
+   dst = g_strPath & "/out/nmake/xpdm/mp/"
     
    CopyAllFile src, dst
    src = g_strPath & "/src/VBox/Additions/WINNT/Graphics/Video/mp/common"
    CopyAllFile src, dst
+
+   src = g_strPath & "/src/VBox/Additions/WINNT/Graphics/Video/disp/xpdm"
+   dst = g_strPath & "/out/nmake/xpdm/disp/"
+   CopyAllFile src, dst
+
+   src = g_strPath & "/src/VBox/Runtime/common/checksum/crc64.cpp"
+   CopyOneFile src, dst
+   src = g_strPath & "/src/VBox/Runtime/VBox/logbackdoor.cpp"
+   CopyOneFile src, dst
 end sub
 
 sub ConfigXPDM
    dim cfg
-   cfg = g_strPath & "/out/nmake/xpdm/sources.inc"
+   cfg = g_strPath & "/out/nmake/xpdm/mp/sources.inc"
    FileDelete cfg
    FileAppendLine cfg, "PATH_ROOT=" & g_strPath
    FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & g_strPathVC & "/include;"
    FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & "$(PATH_ROOT)/src/VBox/Additions/WINNT/Graphics/Video/mp;"
    FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & "$(PATH_ROOT)/src/VBox/Additions/WINNT/Graphics/Video;"
+
+   cfg = g_strPath & "/out/nmake/xpdm/disp/sources.inc"
+   FileDelete cfg
+   FileAppendLine cfg, "PATH_ROOT=" & g_strPath
+   FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & g_strPathVC & "/include;"
+   FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & "$(PATH_ROOT)/src/VBox/Additions/WINNT/Graphics/Video;"
+   FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & "$(PATH_ROOT)/src/VBox/Runtime/include;"
 end sub
 ''
 ' The main() like function.
@@ -2490,10 +2523,10 @@ Sub Main
    if blnNmake = True then
 	  CopyXPDMSource
 	  ConfigXPDM
-      'g_strEnvFile = g_strPath & "\out\nmake\xpdm" & "\env.bat"
-      'EnvInit
-      'EnvPrint "set PATH=" & g_strPathVCCommon & "/IDE;%PATH%;"
-      'EnvPrint "set PATH=" & g_strPathVC & "/bin;%PATH%;"
+      ' g_strEnvFile = g_strPath & "\out\nmake\xpdm" & "\env.bat"
+      ' EnvInit
+      ' EnvPrint "set PATH=" & g_strPathVCCommon & "/IDE;%PATH%;"
+      ' EnvPrint "set PATH=" & g_strPathVC & "/bin;%PATH%;"
    Print ""
    Print "Open DDK Build shell then enter out\nmake\xpdm directory"
    Print " nmake"

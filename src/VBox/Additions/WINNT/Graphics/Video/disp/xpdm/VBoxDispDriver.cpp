@@ -388,7 +388,7 @@ static int VBoxDispInitDevice(PVBOXDISPDEV pDev, DEVMODEW *pdm, GDIINFO *pGdiInf
 /* Display Driver entry point,
  * Returns DDI version number and callbacks supported by driver.
  */
-BOOL DrvEnableDriver(ULONG iEngineVersion, ULONG cj, PDRVENABLEDATA pded)
+BOOL APIENTRY DrvEnableDriver(ULONG iEngineVersion, ULONG cj, PDRVENABLEDATA pded)
 {
     /*@todo: can't link with hal.lib
     int irc = RTR0Init(0);

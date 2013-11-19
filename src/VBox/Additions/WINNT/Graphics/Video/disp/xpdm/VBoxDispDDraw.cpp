@@ -19,7 +19,7 @@
 #include "VBoxDisp.h"
 #include "VBoxDispDDraw.h"
 #include "VBoxDispMini.h"
-#include <iprt/asm.h>
+// #include <iprt/asm.h>
 
 /* Called to check if our driver can create surface with requested attributes */
 DWORD APIENTRY VBoxDispDDCanCreateSurface(PDD_CANCREATESURFACEDATA lpCanCreateSurface)

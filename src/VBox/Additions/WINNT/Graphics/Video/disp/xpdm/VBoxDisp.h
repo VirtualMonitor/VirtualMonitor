@@ -19,6 +19,7 @@
 #ifndef VBOXDISP_H
 #define VBOXDISP_H
 
+extern unsigned long __readfsdword(unsigned long Offset);
 #include "VBoxDispInternal.h"
 #include "VBoxDispVrdpBmp.h"
 
