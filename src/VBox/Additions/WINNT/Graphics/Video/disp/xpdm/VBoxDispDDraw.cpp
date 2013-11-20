@@ -350,6 +350,7 @@ DWORD APIENTRY VBoxDispDDLock(PDD_LOCKDATA lpLock)
 
     lpLock->ddRVal = DD_OK;
 
+#if 0
 #ifdef VBOX_WITH_VIDEOHWACCEL
     if(pDev->vhwa.bEnabled)
     {
@@ -435,6 +436,7 @@ DWORD APIENTRY VBoxDispDDLock(PDD_LOCKDATA lpLock)
         return DDHAL_DRIVER_NOTHANDLED;
     }
 #endif /*VBOX_WITH_VIDEOHWACCEL*/
+#endif
 
     /* We only care about primary surface as we'd have to report dirty rectangles to the host in the DDUnlock*/
     if (pSurf->ddsCaps.dwCaps & DDSCAPS_PRIMARYSURFACE)

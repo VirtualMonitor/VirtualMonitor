@@ -39,7 +39,9 @@ RT_C_DECLS_BEGIN
 # include <Video.h>
 RT_C_DECLS_END
 #else
-// # include <iprt/asm-amd64-x86.h>
+#ifndef NMAKE
+# include <iprt/asm-amd64-x86.h>
+#endif
 #endif
 
 #ifdef VBOX_WDDM_MINIPORT

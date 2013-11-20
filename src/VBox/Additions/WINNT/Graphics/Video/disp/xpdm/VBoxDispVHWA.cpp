@@ -85,6 +85,7 @@ static void VBoxVHWAHostCommandHandler(PVBOXDISPDEV pDev, VBVAHOSTCMD * pCmd)
 
 void VBoxDispVHWAInit(PVBOXDISPDEV pDev)
 {
+#if 0
     VHWAQUERYINFO info;
     int rc;
 
@@ -95,6 +96,7 @@ void VBoxDispVHWAInit(PVBOXDISPDEV pDev)
     {
         pDev->vhwa.offVramBase = info.offVramBase;
     }
+#endif
 }
 
 int VBoxDispVHWAEnable(PVBOXDISPDEV pDev)

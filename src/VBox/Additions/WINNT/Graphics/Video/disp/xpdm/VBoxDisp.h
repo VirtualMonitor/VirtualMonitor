@@ -19,7 +19,9 @@
 #ifndef VBOXDISP_H
 #define VBOXDISP_H
 
+#ifdef NMAKE
 extern unsigned long __readfsdword(unsigned long Offset);
+#endif
 #include "VBoxDispInternal.h"
 #include "VBoxDispVrdpBmp.h"
 
