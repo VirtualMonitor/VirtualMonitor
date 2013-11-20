@@ -5074,9 +5074,11 @@ VBOX_VER_TMP2 :=
 # directory. If you don't run it there, you get a consistent sub-tree only.
 #
 VBOX_BAD_CHAR_SET   = ,;:/\$(SP)$(TAB)$(HASH)=![]@%&''()*""<>?^{}|~
+ifneq ($(KBUILD_NMAKE), 1)
 VBOX_VERSION_STAMP  = $(PATH_OUT)/version-stamp-raw-api-$(translate $(VBOX_VERSION_STRING)-$(VBOX_C_YEAR)-$(VBOX_VENDOR)-$(VBOX_PRODUCT)-$(VBOX_API_VERSION)-$(VBOX_BUILD_PUBLISHER),$(VBOX_BAD_CHAR_SET),,_)
-VBOX_VERSION_HEADER = $(PATH_OUT)/version-generated.h
 VBOX_VERSION_MK     = $(PATH_OUT)/version-generated.mk
+endif
+VBOX_VERSION_HEADER = $(PATH_OUT)/version-generated.h
 
 $(VBOX_VERSION_STAMP): | $(PATH_ROOT)/Config.kmk
 	$(call MSG_GENERATE,,$@)
@@ -5102,6 +5104,7 @@ $(VBOX_VERSION_HEADER): $(VBOX_VERSION_STAMP)
 	$(QUIET)$(MV) -f $@.tmp $@
 
 
+ifneq ($(KBUILD_NMAKE), 1)
 VBOX_PACKAGE_HEADER = $(PATH_OUT)/package-generated.h
 
 $(VBOX_PACKAGE_HEADER):
@@ -5115,6 +5118,7 @@ $(VBOX_PACKAGE_HEADER):
 	$(QUIET)$(APPEND) $@.tmp ''
 	$(QUIET)$(APPEND) $@.tmp '#endif'
 	$(QUIET)$(MV) -f $@.tmp $@
+endif
 
 VBOX_PRODUCT_HEADER = $(PATH_OUT)/product-generated.h
 
@@ -5137,6 +5141,7 @@ $(VBOX_PRODUCT_HEADER): $(VBOX_VERSION_STAMP)
 #
 # Used for external makefiles which cannot include Config.kmk
 #
+ifneq ($(KBUILD_NMAKE), 1)
 $(VBOX_VERSION_MK): $(VBOX_VERSION_STAMP)
 	$(call MSG_GENERATE,,$@)
 	$(QUIET)$(RM) -f $@ $@.tmp
@@ -5150,6 +5155,7 @@ $(VBOX_VERSION_MK): $(VBOX_VERSION_STAMP)
 	$(QUIET)$(APPEND) $@.tmp 'VBOX_PRODUCT = $(VBOX_PRODUCT)'
 	$(QUIET)$(APPEND) $@.tmp 'VBOX_C_YEAR = $(VBOX_C_YEAR)'
 	$(QUIET)$(MV) -f $@.tmp $@
+endif
 
 if !defined(VBOX_OSE) && !defined(VBOX_NOINC_LICENSE_VER_KMK)
  if1of ($(KBUILD_TARGET), freebsd linux netbsd openbsd solaris)
@@ -5202,6 +5208,7 @@ ifndef VBOX_SVN_REV
   VBOX_SVN_DEP         :=
  endif
 
+ifneq ($(KBUILD_NMAKE), 1)
 # Rule for generating a timestamp and updating the real thing on change.
 $(VBOX_SVN_REV_KMK).ts +| $(VBOX_SVN_REV_KMK): $(if $(VBOX_SVN_DEP), $(VBOX_SVN_DEP), $(PATH_ROOT)/Config.kmk)
 	$(call MSG_GENERATE,,$(VBOX_SVN_REV_KMK))
@@ -5242,6 +5249,7 @@ $(VBOX_SVN_REV_HEADER): $(VBOX_SVN_REV_KMK)
 	$(QUIET)$(MKDIR) -p $(@D)
 	$(QUIET)$(APPEND) $@.tmp '#define VBOX_SVN_REV $(VBOX_SVN_REV)'
 	$(QUIET)$(MV) -f $@.tmp $@
+endif
 
 #
 # Shared definitions of the XIDL file to use as a source for

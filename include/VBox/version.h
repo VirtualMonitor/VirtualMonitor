@@ -25,12 +25,12 @@
 
 #ifndef ___VBox_version_h
 #define ___VBox_version_h
+# include <version-generated.h>
 
 /* Product info. */
 #include <product-generated.h>
 
 #ifndef RC_INVOKED
-# include <version-generated.h>
 
 /** Combined version number. */
 # define VBOX_VERSION                    (VBOX_VERSION_MAJOR << 16 | VBOX_VERSION_MINOR)

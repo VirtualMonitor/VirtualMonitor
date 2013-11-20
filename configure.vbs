@@ -2320,19 +2320,30 @@ end sub
 
 sub ConfigXPDM
    dim cfg
-   cfg = g_strPath & "/out/nmake/xpdm/mp/sources.inc"
+   dim cmd
+   cfg = g_strPath & "/out/nmake/xpdm/sources.inc"
    FileDelete cfg
    FileAppendLine cfg, "PATH_ROOT=" & g_strPath
    FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & g_strPathVC & "/include;"
+   FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & "$(PATH_ROOT)/out/nmake;"
    FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & "$(PATH_ROOT)/src/VBox/Additions/WINNT/Graphics/Video/mp;"
    FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & "$(PATH_ROOT)/src/VBox/Additions/WINNT/Graphics/Video;"
-
-   cfg = g_strPath & "/out/nmake/xpdm/disp/sources.inc"
-   FileDelete cfg
-   FileAppendLine cfg, "PATH_ROOT=" & g_strPath
-   FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & g_strPathVC & "/include;"
-   FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & "$(PATH_ROOT)/src/VBox/Additions/WINNT/Graphics/Video;"
    FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & "$(PATH_ROOT)/src/VBox/Runtime/include;"
+
+   Set oShell = WScript.CreateObject ("WScript.Shell")
+   cmd = "cmd /K cd " & g_strPath & " & env.bat & kmk VBOX_NOINC_GCC_CONFIG_KMK=1 PATH_OUT=" & g_strPath & "\out\nmake " & " KBUILD_NMAKE=1 " & g_strPath & "\out\nmake\product-generated.h & exit"
+   Print cmd
+   oShell.run(cmd)
+   Set oShell = Nothing
+
+   cfg = g_strPath & "/out/nmake/xpdm/Makefile"
+   FileDelete cfg
+   FileAppendLine cfg, "all:"
+   FileAppendLine cfg, "    cd mp"
+   FileAppendLine cfg, "    nmake"
+   FileAppendLine cfg, "    cd .."
+   FileAppendLine cfg, "    cd disp"
+   FileAppendLine cfg, "    nmake"
 end sub
 ''
 ' The main() like function.
