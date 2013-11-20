@@ -13,6 +13,7 @@
 #include <iprt/net.h>
 #include "product-generated.h"
 #include "version-generated.h"
+#include "Common.h"
 
 
 #include "Display.h"
@@ -157,6 +158,13 @@ int main(int argc, char **argv)
     /*
      * Before we do *anything*, we initialize the runtime.
      */
+#if defined (RT_OS_WINDOWS)
+	if (IsWow64()) {
+		RTPrintf("Your are runing 32bit VirtualMonitor on 64bit windows\n");
+		RTPrintf("Please Download 64bit version of VirtualMonitor\n");
+		return -1;
+	}
+#endif
     int rc = RTR3InitExe(argc, &argv, 0);
     if (RT_FAILURE(rc))
         return FatalError("RTR3InitExe failed rc=%Rrc\n", rc);

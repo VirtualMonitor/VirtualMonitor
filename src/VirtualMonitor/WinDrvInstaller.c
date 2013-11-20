@@ -8,6 +8,7 @@
 #include <Cfgmgr32.h>
 #include <Shlobj.h>
 #include <strsafe.h>
+#include "Common.h"
 
 typedef BOOL (*PINSTALL_NEW_DEVICE)(HWND, LPGUID, PDWORD);
 typedef BOOL (*PUpdateDriverForPlugAndPlayDevices)(HWND hwndParent,
@@ -932,6 +933,11 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 	UINT status = 0, problem = 0;
 	BOOL bDevice = FALSE;
 
+	if (IsWow64()) {
+		logPrint("Your are runing 32bit VirtualMonitor on 64bit windows\n");
+		logPrint("Please Download 64bit version of VirtualMonitor\n");
+		return -1;
+	}
 	if (argc < 2 || !strcmp(argv[1], "-h")) {
 		usage(argv);
 		goto out;
