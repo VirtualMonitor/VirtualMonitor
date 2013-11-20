@@ -2331,7 +2331,7 @@ sub ConfigXPDM
    FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & "$(PATH_ROOT)/src/VBox/Runtime/include;"
 
    Set oShell = WScript.CreateObject ("WScript.Shell")
-   cmd = "cmd /K cd " & g_strPath & " & env.bat & kmk VBOX_NOINC_GCC_CONFIG_KMK=1 PATH_OUT=" & g_strPath & "\out\nmake " & " KBUILD_NMAKE=1 " & g_strPath & "\out\nmake\product-generated.h & exit"
+   cmd = "cmd /K cd " & g_strPath & " & del /q .\out\nmake\*.h & env.bat & kmk VBOX_NOINC_GCC_CONFIG_KMK=1 PATH_OUT=" & g_strPath & "\out\nmake " & " KBUILD_NMAKE=1 " & g_strPath & "\out\nmake\product-generated.h & exit"
    Print cmd
    oShell.run(cmd)
    Set oShell = Nothing
