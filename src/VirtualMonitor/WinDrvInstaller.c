@@ -195,99 +195,6 @@ FreeLib:
 	return ret;
 }
 
-static void DestroyDevInfo(HDEVINFO info)
-{
-	if (info)
-		SetupDiDestroyDeviceInfoList(info);
-}
-
-static HDEVINFO GetDevInfoFromDeviceId(SP_DEVINFO_DATA *dev_info_data, CHAR *device_id)
-{
-	HDEVINFO dev_info;
-	SP_DEVINFO_DATA data;
-	UINT i;
-	BOOL found;
-	CHAR *buffer;
-	UINT buffer_size = 8092;
-	DWORD required_size;
-	DWORD data_type;
-
-	dev_info = SetupDiGetClassDevsEx(NULL, NULL, NULL, DIGCF_ALLCLASSES | DIGCF_PRESENT, NULL, NULL, NULL);
-	if (dev_info == NULL)
-	{
-		return NULL;
-	}
-
-#if 0
-	SP_DEVINFO_LIST_DETAIL_DATA detail_data;
-	memset(&detail_data, 0, sizeof(detail_data));
-	detail_data.cbSize = sizeof(detail_data);
-	if (SetupDiGetDeviceInfoListDetail(dev_info, &detail_data) == FALSE)
-	{
-		DestroyDevInfo(dev_info);
-		return NULL;
-	}
-#endif
-
-	memset(&data, 0, sizeof(data));
-	data.cbSize = sizeof(data);
-	found = FALSE;
-	buffer = (LPTSTR)LocalAlloc(LPTR, buffer_size);
-	if (!buffer) {
-		logError("Alloc: %x\n", GetLastError());
-		goto out;
-	}
-	
-	for (i = 0;SetupDiEnumDeviceInfo(dev_info, i, &data); i++) {
-		while (!SetupDiGetDeviceRegistryProperty(dev_info,
-												&data,
-												SPDRP_HARDWAREID,
-												&data_type,
-												(PBYTE)buffer,
-												buffer_size,
-												&required_size)) {
-			if (ERROR_INSUFFICIENT_BUFFER == GetLastError()) {
-				// Change the buffer size.
-				if (buffer) {
-					LocalFree(buffer);
-				}
-				// Double the size to avoid problems on 
-				// W2k MBCS systems per KB 888609. 
-				buffer_size *= 2;
-            	buffer = (LPTSTR)LocalAlloc(LPTR, buffer_size);
-				if (!buffer) {
-					logError("LocalAlloc: %x\n", GetLastError());
-					goto out;
-				}
-			} else {
-				// EnumNext
-				break;
-			}
-		}
-
-		if (stricmp(buffer, device_id) == 0) {
-			found = TRUE;
-		}
-
-		if (found) {
-			goto out;
-		}
-
-		memset(&data, 0, sizeof(data));
-		data.cbSize = sizeof(data);
-	}
-out:
-	if (buffer)
-		LocalFree(buffer);
-	if (found == FALSE) {
-		DestroyDevInfo(dev_info);
-		return NULL;
-	} else {
-		memcpy(dev_info_data, &data, sizeof(data));
-		return dev_info;
-	}
-}
-
 BOOL DeleteDevice(HDEVINFO info, SP_DEVINFO_DATA *dev_info_data)
 {
 	SP_REMOVEDEVICE_PARAMS p;
@@ -857,26 +764,6 @@ BOOL RegClean()
     return TRUE;
 }
 
-BOOL GetDevStatus(HDEVINFO h, SP_DEVINFO_DATA *dev_info_data, UINT status, UINT problem)
-{
-	SP_DEVINFO_LIST_DETAIL_DATA detail;
-
-	memset(&detail, 0, sizeof(detail));
-	detail.cbSize = sizeof(detail);
-	
-	SetupDiGetDeviceInfoListDetail(h, &detail);
-	if (CM_Get_DevNode_Status_Ex(status,
-								problem,
-								dev_info_data->DevInst,
-								0,
-								detail.RemoteMachineHandle) != CR_SUCCESS) {
-	
-		logError("SetupDiGetDeviceInfoListDetail: %x\n", GetLastError());
-		return FALSE;
-	}
-	return TRUE;
-}
-
 BOOL DetectVirtualMonitor(BOOL log)
 {
     INT devNum = 0;
@@ -930,7 +817,7 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 {
 	HDEVINFO h = NULL;
 	SP_DEVINFO_DATA dev_info_data;
-	UINT status = 0, problem = 0;
+	ULONG status = 0, problem = 0;
 	BOOL bDevice = FALSE;
 
 	if (IsWow64()) {

@@ -1,5 +1,5 @@
 #include "XpdmDrvIntf.h"
-
+#include "Common.h"
 
 LPSTR XpdmDrvIntf::GetDispCode(INT code)
 {
@@ -547,8 +547,19 @@ char *XpdmDrvIntf::GetVideoMemory()
 
 int XpdmDrvIntf::Init(DisplayParam &param)
 {
+	HDEVINFO h = NULL;
+	SP_DEVINFO_DATA dev_info_data;
+	ULONG status = 0, problem = 0;
+
     if (!FindDeviceName()) {
-        printf("Can't find dev\n");
+		h = GetDevInfoFromDeviceId(&dev_info_data, "VirtualMonitorVideo\0\0\0");
+		if (!h) {
+			printf("Driver Not installed\n");
+		} else {
+			GetDevStatus(h, &dev_info_data, &status, &problem);
+			printf("Driver report status: %08x, problem: %08x\n", status, problem);
+			DestroyDevInfo(h);
+		}
         return -1;
     }
     if (!OpenDeviceRegistryKey()) {
