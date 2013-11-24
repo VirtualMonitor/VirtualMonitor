@@ -2289,10 +2289,19 @@ Sub CopyOneFile(Src, Dst)
    arr = split(Dst, "\")
    path = ""
    For Each dir In arr
-     If path <> "" Then path = path & "\"
-     path = path & dir
-     If fso.FolderExists(path) = False Then fso.CreateFolder(path)
+    If path <> "" Then path = path & "\"
+    path = path & dir
+    If fso.FolderExists(path) = False Then fso.CreateFolder(path)
    Next
+   Print "Copying " &  Src & " to " & Dst 
+   fso.copyFile Src, Dst
+   Set fso = Nothing
+end sub
+
+Sub CopyOneFileNoMkdir(Src, Dst)
+   Src=DosSlashes(Src)
+   Dst=DosSlashes(Dst)
+   Set fso = CreateObject("Scripting.FileSystemObject")
    Print "Copying " &  Src & " to " & Dst 
    fso.copyFile Src, Dst
    Set fso = Nothing
@@ -2316,6 +2325,9 @@ sub CopyXPDMSource
    CopyOneFile src, dst
    src = g_strPath & "/src/VBox/Runtime/VBox/logbackdoor.cpp"
    CopyOneFile src, dst
+   src = g_strPath & "/src/VBox/Additions/WINNT/Graphics/Video/common/crtdefs_size_t.h"
+   dst = g_strPath & "/out/nmake/crtdefs.h"
+   CopyOneFileNoMkdir src, dst
 end sub
 
 sub ConfigXPDM
@@ -2324,14 +2336,14 @@ sub ConfigXPDM
    cfg = g_strPath & "/out/nmake/xpdm/sources.inc"
    FileDelete cfg
    FileAppendLine cfg, "PATH_ROOT=" & g_strPath
-   FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & g_strPathVC & "/include;"
+   ' FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & g_strPathVC & "/include;"
    FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & "$(PATH_ROOT)/out/nmake;"
    FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & "$(PATH_ROOT)/src/VBox/Additions/WINNT/Graphics/Video/mp;"
    FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & "$(PATH_ROOT)/src/VBox/Additions/WINNT/Graphics/Video;"
    FileAppendLine cfg, "INCLUDES=$(INCLUDES) " & "$(PATH_ROOT)/src/VBox/Runtime/include;"
 
    Set oShell = WScript.CreateObject ("WScript.Shell")
-   cmd = "cmd /K cd " & g_strPath & " & del /q .\out\nmake\*.h & env.bat & kmk VBOX_NOINC_GCC_CONFIG_KMK=1 PATH_OUT=" & g_strPath & "\out\nmake " & " KBUILD_NMAKE=1 " & g_strPath & "\out\nmake\product-generated.h & exit"
+   cmd = "cmd /K cd " & g_strPath & " & del /q .\out\nmake\version-generated.h & env.bat & kmk VBOX_NOINC_GCC_CONFIG_KMK=1 PATH_OUT=" & g_strPath & "\out\nmake " & " KBUILD_NMAKE=1 " & g_strPath & "\out\nmake\product-generated.h & exit"
    Print cmd
    oShell.run(cmd)
    Set oShell = Nothing
@@ -2494,16 +2506,17 @@ Sub Main
    CheckSourcePath
    CheckForkBuild strOptkBuild
    CheckForWinDDK strOptDDK
-   CfgPrint "VBOX_WITH_WDDM_W8     := " '' @todo look for WinDDKv8; Check with Misha if we _really_ need the v8 DDK...
-   CheckForVisualCPP strOptVC, strOptVCCommon, blnOptVCExpressEdition
-   CheckForPlatformSDK strOptSDK
-   ' CheckForMidl
-   ' CheckForMinGW32 strOptMinGW32, strOptW32API
-   ' CheckForMinGWw64 strOptMinGWw64
-   CfgPrint "VBOX_WITH_OPEN_WATCOM := " '' @todo look for openwatcom 1.9+
-   EnvPrint "set PATH=%PATH%;" & g_strPath& "/tools/win." & g_strTargetArch & "/bin;" '' @todo look for yasm
-   ' CheckForlibSDL strOptlibSDL
-
+   if blnNmake = False then
+      CfgPrint "VBOX_WITH_WDDM_W8     := " '' @todo look for WinDDKv8; Check with Misha if we _really_ need the v8 DDK...
+      CheckForVisualCPP strOptVC, strOptVCCommon, blnOptVCExpressEdition
+      CheckForPlatformSDK strOptSDK
+      ' CheckForMidl
+      ' CheckForMinGW32 strOptMinGW32, strOptW32API
+      ' CheckForMinGWw64 strOptMinGWw64
+      CfgPrint "VBOX_WITH_OPEN_WATCOM := " '' @todo look for openwatcom 1.9+
+      EnvPrint "set PATH=%PATH%;" & g_strPath& "/tools/win." & g_strTargetArch & "/bin;" '' @todo look for yasm
+      ' CheckForlibSDL strOptlibSDL
+   end if
    if blnDriverOnly = True then
       CfgPrint "DRIVER_ONLY := 1"
    else

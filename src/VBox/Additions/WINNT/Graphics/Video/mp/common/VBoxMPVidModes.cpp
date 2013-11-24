@@ -19,8 +19,10 @@
 #include "VBoxMPCommon.h"
 
 #if _MSC_VER >= 1400 /* bird: MS fixed swprintf to be standard-conforming... */
+#ifndef NMAKE
 #define _INC_SWPRINTF_INL_
 extern "C" int __cdecl swprintf(wchar_t *, const wchar_t *, ...);
+#endif
 #endif
 #include <wchar.h>
 #include <VBox/Hardware/VBoxVideoVBE.h>
