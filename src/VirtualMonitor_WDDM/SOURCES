@@ -1,0 +1,10 @@
+TARGETNAME=lower_filter
+TARGETPATH=..\\obj
+TARGETTYPE=DRIVER
+
+#Disable deprecated function uage warnings
+C_DEFINES=$(C_DEFINES) /wd4996
+
+SOURCES=LowerDriver.cpp unicode.cpp eventlog.cpp Msg.rc
+
+TARGET_DESTINATION=retail
