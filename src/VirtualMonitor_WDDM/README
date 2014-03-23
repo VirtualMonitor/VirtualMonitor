@@ -1,0 +1,6 @@
+VirtualMonitor_WDDM is not integrated in the main VirtualMonitor project (XPDM which is compiled using kmk) and needs to be compiled separately.
+
+Steps for compilation:
+1) Install the Windows ddk. Open Win 7 checked build environment.
+2) Go to the VirtualMonitor_WDDM 
+3) build -ceZ
