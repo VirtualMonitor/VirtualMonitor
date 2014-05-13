@@ -92,7 +92,7 @@ int VNCDisplay::Init(DisplayParam &param, char *pVideoMemory)
         }
 
     }
-    if (ipv4Port == 0 || ipv6Port == 0)
+    if (ipv4Port == 0 && ipv6Port == 0)
         vncServer->autoPort = 1;
     else
     {
