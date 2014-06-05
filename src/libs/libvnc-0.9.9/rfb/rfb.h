@@ -63,7 +63,11 @@ extern "C"
 #endif
 
 #ifdef LIBVNCSERVER_HAVE_LIBPTHREAD
+#if WIN32
+#include "winpthreads.h"
+#else
 #include <pthread.h>
+#endif
 #if 0 /* debugging */
 #define LOCK(mutex) (rfbLog("%s:%d LOCK(%s,0x%x)\n",__FILE__,__LINE__,#mutex,&(mutex)), pthread_mutex_lock(&(mutex)))
 #define UNLOCK(mutex) (rfbLog("%s:%d UNLOCK(%s,0x%x)\n",__FILE__,__LINE__,#mutex,&(mutex)), pthread_mutex_unlock(&(mutex)))
@@ -111,7 +115,7 @@ extern "C"
    get all mixed up. So this gives a linker error reminding you to compile
    the library and your application (at least the parts including rfb.h)
    with the same support for pthreads. */
-#ifdef LIBVNCSERVER_HAVE_LIBPTHREAD
+#if defined LIBVNCSERVER_HAVE_LIBPTHREAD && !defined WIN32
 #ifdef LIBVNCSERVER_HAVE_LIBZ
 #define rfbInitServer rfbInitServerWithPthreadsAndZRLE
 #else

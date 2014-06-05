@@ -125,7 +125,10 @@ int VNCDisplay::Init(DisplayParam &param, char *pVideoMemory)
 
 #endif
 
-    rfbLogEnable(0);
+	if(param.logFilePath != NULL && param.logFileHandle !=NULL)
+	{
+		rfbLogEnable(1);
+	}
     return 0;
 }
 

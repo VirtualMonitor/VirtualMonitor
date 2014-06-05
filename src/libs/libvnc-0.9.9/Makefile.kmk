@@ -4,7 +4,9 @@ include $(KBUILD_PATH)/subheader.kmk
 LIBRARIES += VBox-libvnc
 VBox-libvnc_TEMPLATE = VBOXR3
 VBox-libvnc_SDKS           = VBOX_ZLIB
-VBox-libvnc_DEFS.win = LIBVNCSERVER_HAVE_NO_LIBPTHREAD WIN32
+#VBox-libvnc_DEFS.win = LIBVNCSERVER_HAVE_NO_LIBPTHREAD WIN32
+VBox-libvnc_DEFS.win = LIBVNCSERVER_HAVE_LIBPTHREAD WIN32
+
 #VBox-libvnc_BLD_TYPE = release # WARNING! Always optimizing this lib.
 VBox-libvnc_INCS = . common libvncserver $(PATH_ROOT)/include $(SDK_VBOX_LIBPNG_INCS)
 

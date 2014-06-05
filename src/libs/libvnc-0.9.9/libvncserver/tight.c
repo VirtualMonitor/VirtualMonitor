@@ -1575,7 +1575,7 @@ SendJpegRect(rfbClientPtr cl, int x, int y, int w, int h, int quality)
         }
     }
 
-    if (tightAfterBufSize < TJBUFSIZE(w, h)) {
+    if (tightAfterBufSize < (int)TJBUFSIZE(w, h)) {
         if (tightAfterBuf == NULL)
             tightAfterBuf = (char *)malloc(TJBUFSIZE(w, h));
         else

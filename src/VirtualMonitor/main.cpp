@@ -22,7 +22,8 @@ static DisplayParam cmdParam;
 void Usage()
 {
     RTPrintf("-x Number\t specify x resolution\n");
-    RTPrintf("-x Number\t specify y resolution\n");
+    RTPrintf("-y Number\t specify y resolution\n");
+	RTPrintf("-log [filename] specify a filename for logging\n");
     RTPrintf("-bpp Number\t specify bit per pixel, currently only support 32bit true color\n");
     RTPrintf("-a4 IPv4 address\t listen on specified IPv4 address only\n");
     RTPrintf("-p4 Number\t listen on specify IPv4 port\n");
@@ -105,7 +106,27 @@ int decode_cmd(int argc, char **argv)
 			RTPrintf("%s Version: %d.%d.%d\n", VBOX_PRODUCT,
 				VBOX_VERSION_MAJOR, VBOX_VERSION_MINOR, VBOX_VERSION_BUILD);
 			exit(0);
-		}
+		} else if (strcmp(argv[i], "-log") == 0) {
+			if ( (i + 1) <= argc) {
+				cmdParam.logFilePath = argv[++i];
+				if (cmdParam.logFilePath == NULL) continue;
+				printf("\nTrying to open logfile %s\n", cmdParam.logFilePath);				
+			    if((cmdParam.logFileHandle = freopen(cmdParam.logFilePath, "w", stderr)) == NULL)
+				{
+				  printf("Unable to redirect output to logfile %s\n", cmdParam.logFilePath);
+				}
+				else
+				{
+				  printf("Logging now to this file \n");
+				}
+			}
+			else
+			{
+				printf("Filename argument missing\n");
+				cmdParam.logFilePath = NULL;
+				cmdParam.logFileHandle = NULL;
+			}
+		}				
     }
     if (cmdParam.x == 0) {
         cmdParam.x = 800;
@@ -129,7 +150,12 @@ extern "C" DECLEXPORT(int) TrustedMain (int argc, char **argv, char **envp)
         Usage();
         return 0;
     }
-    return VirtualMonitorMain(cmdParam);
+    int rc = VirtualMonitorMain(cmdParam);
+	if (cmdParam.logFilePath != NULL && cmdParam.logFileHandle != NULL)
+	{
+		fclose(cmdParam.logFileHandle);
+	}
+	return rc;
 }
 
 /**
