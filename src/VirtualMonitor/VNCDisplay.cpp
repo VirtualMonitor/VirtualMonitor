@@ -38,11 +38,13 @@ int VNCDisplay::Init(DisplayParam &param, char *pVideoMemory)
     } else {
         strncpy(ipv4Addr, szIPv4ListenAll, sizeof(ipv4Addr));
     }
+	ipv4Port = param.net.ipv4Port;
 
     if (ipv4Port == 0)
-        vncServer->autoPort = 1;
-	else
-    	ipv4Port = param.net.ipv4Port;
+    {
+       vncServer->autoPort = 1;
+    }
+
 #ifndef ENABLE_IPv6 
     if (!rfbStringToAddr(ipv4Addr, &vncServer->listenInterface)) {
         printf("could not parse VNC server listen address '%s'\n", ipv4Addr);
