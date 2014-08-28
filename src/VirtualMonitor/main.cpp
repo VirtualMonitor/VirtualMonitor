@@ -14,11 +14,11 @@
 #include "product-generated.h"
 #include "version-generated.h"
 #include "Common.h"
-
+#include <stdio.h>
 
 #include "Display.h"
 static DisplayParam cmdParam;
-
+#define RTPrintf( x, ...) fprintf(stderr, (x), __VA_ARGS__)
 void Usage()
 {
     RTPrintf("-x Number\t specify x resolution\n");
@@ -52,8 +52,13 @@ int decode_cmd(int argc, char **argv)
 {
     int i, i1;
     memset(&cmdParam, 0, sizeof(cmdParam));
-
+	RTPrintf("decode_cmd Arguments %d\n", argc);
     for (i = i1 = 1; i < argc; i++) {
+		RTPrintf("\nArguments[%d]=%s", i, argv[i]);
+		if ( (i+1) < argc )
+		{
+			RTPrintf("\nArguments[%d]=%s", i+1, argv[i+1]);
+		}
         if (strcmp(argv[i], "-h") == 0) {
 			// show help message
 			return -1;
@@ -83,6 +88,7 @@ int decode_cmd(int argc, char **argv)
                 return -1;
             }
             cmdParam.net.ipv4Port = atoi(argv[++i]);
+			RTPrintf("IPV4 Port %d\n", cmdParam.net.ipv4Port);
         } else if (strcmp(argv[i], "-a6") == 0) { /* ipv6 Address*/
             if (i + 1 >= argc || !RTNetIsIPv6AddrStr(argv[i+1])) {
                 return -1;
@@ -139,7 +145,7 @@ int decode_cmd(int argc, char **argv)
     }
     // Only 32 bpp works on current XPDM driver
     cmdParam.bpp = 32;
-    // dump_cmd(&cmdParam);
+    dump_cmd(&cmdParam);
     return 0;
 }
 
