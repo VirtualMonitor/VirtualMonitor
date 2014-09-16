@@ -1,4 +1,6 @@
 echo off
-cscript configure.vbs --with-libjpeg=.\libjpeg-turbo
+
+cscript configure.vbs --with-libjpeg=.\src\libs\libjpeg-turbo
 call env.bat
+
 kmk

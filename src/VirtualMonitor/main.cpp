@@ -31,6 +31,7 @@ void Usage()
     RTPrintf("-p6 Number\t listen on specify IPv4 port\n");
     RTPrintf("-dummy\t use dummy driver, this option is for developer\n");
     RTPrintf("-tf filename\t use filename as input pixel, this option is for developer\n");
+    RTPrintf("-auto Specific for Trapeze. Detect resolution from config files\n");	
     RTPrintf("-v \t show version information\n");
     RTPrintf("-h \t show this help message\n");
 	RTPrintf("\n example\n");
@@ -48,6 +49,184 @@ void dump_cmd(DisplayParam *cmd)
     RTPrintf("IPv6: %s: %d\n", cmd->net.ipv6Addr, cmd->net.ipv6Port);
 }
 
+typedef bool (*lineCallBack) (const char *pLine, const int len);
+
+
+bool ReadUnicodeFile(const char* pFileName, lineCallBack fun)
+{
+	fprintf(stderr, "\nReadUnicodeFile open file %s\n", pFileName);
+	FILE *fp = fopen(pFileName,"r");
+	char *pLine = NULL;
+	char *pBuffer = NULL;	
+	DWORD totalSize = 0;
+	bool success = true;
+	
+	unsigned int lastLength = 0;
+	if (!fp)
+	{
+		fprintf(stderr, "\nUnable to open file %s", pFileName);
+		return false;
+	}
+	if (!fun)
+	{
+		fprintf(stderr, "\nCallback not specified ");
+		return false;
+	}
+	fseek(fp, 0L, SEEK_END);
+	totalSize = ftell(fp);
+	fseek(fp, 0L, SEEK_SET);
+	
+	fprintf(stderr, "\nFile Size is %d", totalSize);
+	pBuffer = (char*) malloc(totalSize);
+	if (!pBuffer)
+	{
+	    fprintf(stderr, "\nUnable to allocate memory of bytes %d", totalSize);
+		return false;
+	}
+	
+	if(success)
+	{
+		DWORD readBytes = 0, curRead = 0, remaining = 0;
+		curRead = 0;
+		remaining = totalSize;
+		readBytes = 0;
+		while(readBytes < totalSize)
+		{
+			curRead = fread( pBuffer + readBytes , 1 , remaining, fp);
+			if (curRead == 0 || feof(fp))
+			{
+				break;
+			}
+			readBytes += curRead;
+			remaining -= curRead;
+		}
+	}
+	// All the contents of file has been read. Now check the file type
+	PWSTR pHeader = reinterpret_cast<PWSTR>(pBuffer);
+	
+	if ( (*pHeader) == 0xFFFE || (*pHeader) == 0xFEFF)
+	{
+		DWORD tempSize = 0;
+		char *tempBuffer = NULL;
+		pHeader++;
+		DWORD curSz = totalSize- 2;
+		fprintf(stderr, "\nReadFile is Unicode indeed. Signature %x", (*pHeader));
+		
+		success = false;
+		//Note: Skip the header signature while reading file
+		tempSize = WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR)(pHeader), curSz, NULL, 0, NULL, NULL);
+		fprintf(stderr, "\nFile requires memory of %d to be converted", tempSize);	
+		// Do not allocate more than 1Meg
+		if (tempSize < 0x100000)
+		{
+			tempBuffer = (char*) malloc(tempSize);
+			if (tempBuffer)
+			{
+				if ( 0 == WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR)(pHeader), curSz, tempBuffer, tempSize, NULL, NULL))
+				{
+					// Reassign original buffer to new buffer
+					free(pBuffer);
+					pBuffer = tempBuffer;
+					totalSize = tempSize;
+					success = true;
+				}
+				else
+				{
+					free(tempBuffer);
+				}
+			}
+		}
+	}
+	else if (memcmp(pBuffer, "\xEF\xBB\xBF", 3) == 0)
+    {
+		DWORD tempSize = 0;
+		char *tempBuffer = NULL;
+		success = false;
+        // UTF-8
+		fprintf(stderr, "\nReadFile is UTF-8 indeed");
+		tempBuffer = (char*) malloc(totalSize - 3);	
+		if (tempBuffer)
+		{
+			memcpy(tempBuffer, pBuffer + 3, totalSize - 3);
+			free(pBuffer);
+			pBuffer = tempBuffer;
+			totalSize = totalSize -3;
+			success = true;
+		}
+	}
+	
+	for (unsigned int i = 0 ; i < totalSize; i++, lastLength++)
+	{
+		if (pBuffer[i] == '\r' || pBuffer[i] == '\n')
+		{	
+			// replace line terminator by NULL character
+			pBuffer[i] = 0;
+			if ( (lastLength > 1) && fun)
+			{
+				if(!fun(pLine, lastLength))
+				{
+					//Function says no need to continue
+					break;
+				}
+			}
+			pLine = pBuffer + i + 1;
+			lastLength = 0;
+		}
+	}
+	if (!pBuffer)
+	{
+		free(pBuffer);
+	}
+	fclose(fp);
+	return success;
+}
+
+static int confGroup = 0;
+static int techVehicle = 0;
+
+bool GetConfigGroup (const char *pLine, const int len)
+{
+	bool retVal = true;
+	unsigned int tech = 0, group = 0;
+	if (pLine != NULL && len > 0)
+	{
+		if ( 2 == sscanf(pLine, "%d %d", &tech, &group))
+		{
+			if ( tech == techVehicle)
+			{
+				printf("\nTechnical Veh %d in Group %d",tech,group );
+				confGroup = group;
+				retVal = false;
+			}
+		}
+	}
+	return retVal;
+}
+
+bool GetResolution (const char *pLine, const int len)
+{
+	bool retVal = true;
+	int conf = 0, x = 0, y = 0;
+	if (pLine != NULL && len > 0)
+	{
+		if ( 3 == sscanf(pLine, "%d %d %d", &conf, &x, &y))
+		{
+			if ( conf == confGroup)
+			{
+				printf("\nGot configuration group %d resolution %d X %d",confGroup, x, y );
+				cmdParam.x = x;
+				cmdParam.y = y;
+				retVal = false;
+			}
+		}
+	}
+	return retVal;
+}
+
+
+const char configGroup[] = "d:\\Programs\\Ecu\\Config\\CnfGrp.txt";
+const char configVirtMonitor[] = "d:\\Programs\\Ecu\\Config\\CnfVirtualMonitor.txt";
+				
 int decode_cmd(int argc, char **argv)
 {
     int i, i1;
@@ -132,7 +311,29 @@ int decode_cmd(int argc, char **argv)
 				cmdParam.logFilePath = NULL;
 				cmdParam.logFileHandle = NULL;
 			}
-		}				
+		}
+		else if (strcmp(argv[i], "-auto") == 0) 
+		{
+			char buffer[128];
+			DWORD retVal = GetEnvironmentVariableA("TRAPEZE_VEHICLE_NUMBER", buffer, 128);
+			if (retVal > 0 && retVal < 128)
+			{
+				techVehicle = atoi(buffer); 
+				printf("\nTrapeze Technical Vehicle number %d", techVehicle);
+				if ( ReadUnicodeFile( configGroup, GetConfigGroup ) )
+				{
+					printf("\nTrapeze Vehicle Group %d", confGroup);
+				}
+				if ( ReadUnicodeFile( configVirtMonitor, GetResolution ) )
+				{
+					printf("\nX resolution= %d Y resolution= %d",cmdParam.x, cmdParam.y );
+				}	
+			}
+			else
+			{
+				printf("\nUnable to determine Trapeze Technical Vehicle Number");
+			}
+		}					
     }
     if (cmdParam.x == 0) {
         cmdParam.x = 800;
