@@ -52,10 +52,10 @@ void dump_cmd(DisplayParam *cmd)
 typedef bool (*lineCallBack) (const char *pLine, const int len);
 
 
-bool ReadUnicodeFile(const char* pFileName, lineCallBack fun)
+bool ReadTextFile(const char* pFileName, lineCallBack fun)
 {
-	fprintf(stderr, "\nReadUnicodeFile open file %s\n", pFileName);
-	FILE *fp = fopen(pFileName,"r");
+	RTPrintf("\nReadUnicodeFile open file %s\n", pFileName);
+	FILE *fp = fopen(pFileName,"r+b");
 	char *pLine = NULL;
 	char *pBuffer = NULL;	
 	DWORD totalSize = 0;
@@ -64,23 +64,23 @@ bool ReadUnicodeFile(const char* pFileName, lineCallBack fun)
 	unsigned int lastLength = 0;
 	if (!fp)
 	{
-		fprintf(stderr, "\nUnable to open file %s", pFileName);
+		RTPrintf("\nUnable to open file %s", pFileName);
 		return false;
 	}
 	if (!fun)
 	{
-		fprintf(stderr, "\nCallback not specified ");
+		RTPrintf("\nCallback not specified. Returning ");
 		return false;
 	}
 	fseek(fp, 0L, SEEK_END);
 	totalSize = ftell(fp);
 	fseek(fp, 0L, SEEK_SET);
 	
-	fprintf(stderr, "\nFile Size is %d", totalSize);
+	RTPrintf("\nFile Size is %d", totalSize);
 	pBuffer = (char*) malloc(totalSize);
 	if (!pBuffer)
 	{
-	    fprintf(stderr, "\nUnable to allocate memory of bytes %d", totalSize);
+	    RTPrintf("\nUnable to allocate memory of bytes %d", totalSize);
 		return false;
 	}
 	
@@ -100,30 +100,35 @@ bool ReadUnicodeFile(const char* pFileName, lineCallBack fun)
 			readBytes += curRead;
 			remaining -= curRead;
 		}
+		if (remaining)
+		{
+			RTPrintf("\nUnable to read complete file. Read %d out of %d", readBytes, totalSize);
+		}
 	}
 	// All the contents of file has been read. Now check the file type
 	PWSTR pHeader = reinterpret_cast<PWSTR>(pBuffer);
-	
 	if ( (*pHeader) == 0xFFFE || (*pHeader) == 0xFEFF)
 	{
 		DWORD tempSize = 0;
 		char *tempBuffer = NULL;
-		pHeader++;
 		DWORD curSz = totalSize- 2;
-		fprintf(stderr, "\nReadFile is Unicode indeed. Signature %x", (*pHeader));
+		RTPrintf("\nReadFile is Unicode indeed. Signature %x", (*pHeader));
+		pHeader++;
 		
 		success = false;
 		//Note: Skip the header signature while reading file
 		tempSize = WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR)(pHeader), curSz, NULL, 0, NULL, NULL);
-		fprintf(stderr, "\nFile requires memory of %d to be converted", tempSize);	
+		RTPrintf("\nFile requires memory of %d to be converted", tempSize);	
 		// Do not allocate more than 1Meg
 		if (tempSize < 0x100000)
 		{
 			tempBuffer = (char*) malloc(tempSize);
 			if (tempBuffer)
 			{
+				RTPrintf("\nAllocated memory. Starting conversion");
 				if ( 0 == WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR)(pHeader), curSz, tempBuffer, tempSize, NULL, NULL))
 				{
+					RTPrintf("\nConversion completed. Swapping memory");
 					// Reassign original buffer to new buffer
 					free(pBuffer);
 					pBuffer = tempBuffer;
@@ -132,6 +137,7 @@ bool ReadUnicodeFile(const char* pFileName, lineCallBack fun)
 				}
 				else
 				{
+					RTPrintf("\nUnable to do Conversion. Freeing memory");
 					free(tempBuffer);
 				}
 			}
@@ -143,7 +149,7 @@ bool ReadUnicodeFile(const char* pFileName, lineCallBack fun)
 		char *tempBuffer = NULL;
 		success = false;
         // UTF-8
-		fprintf(stderr, "\nReadFile is UTF-8 indeed");
+		RTPrintf("\nReadFile is UTF-8 indeed");
 		tempBuffer = (char*) malloc(totalSize - 3);	
 		if (tempBuffer)
 		{
@@ -155,7 +161,7 @@ bool ReadUnicodeFile(const char* pFileName, lineCallBack fun)
 		}
 	}
 	
-	for (unsigned int i = 0 ; i < totalSize; i++, lastLength++)
+	for (unsigned int i = 0, lastlength = 0 ; i < totalSize ; i++, lastLength++)
 	{
 		if (pBuffer[i] == '\r' || pBuffer[i] == '\n')
 		{	
@@ -222,7 +228,6 @@ bool GetResolution (const char *pLine, const int len)
 	}
 	return retVal;
 }
-
 
 const char configGroup[] = "d:\\Programs\\Ecu\\Config\\CnfGrp.txt";
 const char configVirtMonitor[] = "d:\\Programs\\Ecu\\Config\\CnfVirtualMonitor.txt";
@@ -295,19 +300,19 @@ int decode_cmd(int argc, char **argv)
 			if ( (i + 1) <= argc) {
 				cmdParam.logFilePath = argv[++i];
 				if (cmdParam.logFilePath == NULL) continue;
-				printf("\nTrying to open logfile %s\n", cmdParam.logFilePath);				
+				RTPrintf("\nTrying to open logfile %s\n", cmdParam.logFilePath);				
 			    if((cmdParam.logFileHandle = freopen(cmdParam.logFilePath, "w", stderr)) == NULL)
 				{
-				  printf("Unable to redirect output to logfile %s\n", cmdParam.logFilePath);
+				  RTPrintf("Unable to redirect output to logfile %s\n", cmdParam.logFilePath);
 				}
 				else
 				{
-				  printf("Logging now to this file \n");
+				  RTPrintf("Logging now to this file \n");
 				}
 			}
 			else
 			{
-				printf("Filename argument missing\n");
+				RTPrintf("Filename argument missing\n");
 				cmdParam.logFilePath = NULL;
 				cmdParam.logFileHandle = NULL;
 			}
@@ -319,27 +324,27 @@ int decode_cmd(int argc, char **argv)
 			if (retVal > 0 && retVal < 128)
 			{
 				techVehicle = atoi(buffer); 
-				printf("\nTrapeze Technical Vehicle number %d", techVehicle);
-				if ( ReadUnicodeFile( configGroup, GetConfigGroup ) )
+				RTPrintf("\nTrapeze Technical Vehicle number %d", techVehicle);
+				if ( ReadTextFile( configGroup, GetConfigGroup ) )
 				{
-					printf("\nTrapeze Vehicle Group %d", confGroup);
+					RTPrintf("\nTrapeze Vehicle Group %d", confGroup);
 				}
-				if ( ReadUnicodeFile( configVirtMonitor, GetResolution ) )
+				if ( ReadTextFile( configVirtMonitor, GetResolution ) )
 				{
-					printf("\nX resolution= %d Y resolution= %d",cmdParam.x, cmdParam.y );
+					RTPrintf("\nX resolution= %d Y resolution= %d",cmdParam.x, cmdParam.y );
 				}	
 			}
 			else
 			{
-				printf("\nUnable to determine Trapeze Technical Vehicle Number");
+				RTPrintf("\nUnable to determine Trapeze Technical Vehicle Number");
 			}
 		}					
     }
     if (cmdParam.x == 0) {
-        cmdParam.x = 800;
+        cmdParam.x = 1280;
     }
     if (cmdParam.y == 0) {
-        cmdParam.y = 600;
+        cmdParam.y = 800;
     }
     if (cmdParam.bpp != 8 && cmdParam.bpp != 16 && cmdParam.bpp != 24 && cmdParam.bpp != 32) {
         cmdParam.bpp = 32;

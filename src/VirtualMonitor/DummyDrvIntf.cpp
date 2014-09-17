@@ -101,7 +101,7 @@ int DummyDrvIntf::GetEvent(Event &evt)
 				}
 			}
 		}
-        evt.code = EVENT_DITRY_AREA;
+        evt.code = EVENT_DIRTY_AREA;
         evt.dirtyArea.left = x;
         evt.dirtyArea.top = y;
         evt.dirtyArea.right = w;
