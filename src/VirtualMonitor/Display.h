@@ -3,6 +3,8 @@
 #define  RT_STRICT 
 #include <VBox/types.h>
 #include <iprt/assert.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define ADDRESSSIZE         60
 typedef struct _DisplayParam {
@@ -23,6 +25,8 @@ typedef struct _DisplayParam {
 	bool enableDummyDriver;
 	// for Testing
 	char *inputFile;
+	char *logFilePath;	
+	FILE *logFileHandle;
 } DisplayParam;
 
 class Display {

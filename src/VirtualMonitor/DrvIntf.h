@@ -6,8 +6,9 @@
 #include "Display.h"
 
 enum EVENT_CODE {
-    EVENT_DITRY_AREA,
-    EVENT_QUIT,
+    EVENT_DIRTY_AREA,
+    EVENT_TIMEOUT,
+	EVENT_QUIT,
 };
 
 typedef struct _Event {

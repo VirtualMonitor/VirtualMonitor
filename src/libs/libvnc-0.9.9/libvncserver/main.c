@@ -436,7 +436,7 @@ void rfbMarkRectAsModified(rfbScreenInfoPtr screen,int x1,int y1,int x2,int y2)
    sraRgnDestroy(region);
 }
 
-#ifdef LIBVNCSERVER_HAVE_LIBPTHREAD
+#if defined LIBVNCSERVER_HAVE_LIBPTHREAD && !defined WIN32
 #include <unistd.h>
 
 static void *
@@ -877,6 +877,7 @@ rfbScreenInfoPtr rfbGetScreen(int* argc,char** argv,
    screen->protocolMajorVersion = rfbProtocolMajorVersion;
    screen->protocolMinorVersion = rfbProtocolMinorVersion;
 
+   rfbLog("RFB version %d.%d", rfbProtocolMajorVersion, rfbProtocolMinorVersion);
    screen->permitFileTransfer = FALSE;
 
    if(!rfbProcessArguments(screen,argc,argv)) {
@@ -1178,7 +1179,7 @@ rfbBool rfbIsActive(rfbScreenInfoPtr screenInfo) {
 void rfbRunEventLoop(rfbScreenInfoPtr screen, long usec, rfbBool runInBackground)
 {
   if(runInBackground) {
-#ifdef LIBVNCSERVER_HAVE_LIBPTHREAD
+#if defined LIBVNCSERVER_HAVE_LIBPTHREAD && !defined WIN32
        pthread_t listener_thread;
 
        screen->backgroundLoop = TRUE;

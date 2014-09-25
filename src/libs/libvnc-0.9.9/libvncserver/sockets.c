@@ -141,13 +141,14 @@ rfbInitSockets(rfbScreenInfoPtr rfbScreen)
     	rfbScreen->maxFd = rfbScreen->inetdSock;
 	return;
     }
-
+    rfbLog("Autoprobe = %d IPV4 Port = %d\n", rfbScreen->autoPort, rfbScreen->port);
+	
     if(rfbScreen->autoPort) {
         int i;
         FD_ZERO(&(rfbScreen->allFds));
 
-        rfbLog("Autoprobing TCP port \n");
-        for (i = 5900; i < 6000; i++) {
+        rfbLog("Autoprobing TCP port from 5901\n");
+        for (i = 5901; i < 6000; i++) {
             if ((rfbScreen->listenSock = rfbListenOnTCPPort(i, iface)) >= 0) {
 		rfbScreen->port = i;
 		break;
@@ -186,8 +187,9 @@ rfbInitSockets(rfbScreenInfoPtr rfbScreen)
       FD_ZERO(&(rfbScreen->allFds));
 
       if ((rfbScreen->listenSock = rfbListenOnTCPPort(rfbScreen->port, iface)) < 0) {
-	rfbLogPerror("ListenOnTCPPort");
-	return;
+	    rfbLog("Failed to Listen for VNC connections on TCP port %d \n", rfbScreen->port);  
+		rfbLogPerror("ListenOnTCPPort");
+		return;
       }
       rfbLog("Listening for VNC connections on TCP port %d\n", rfbScreen->port);  
   

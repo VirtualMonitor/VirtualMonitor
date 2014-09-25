@@ -270,6 +270,7 @@ rfbSetProtocolVersion(rfbScreenInfoPtr rfbScreen, int major_, int minor_)
 {
     /* Permit the server to set the version to report */
     /* TODO: sanity checking */
+    rfbLog("rfbSetProtocolVersion(%d,%d) \n", major_, minor_);	
     if ((major_==3) && (minor_ > 2 && minor_ < 9))
     {
       rfbScreen->protocolMajorVersion = major_;
@@ -456,10 +457,10 @@ rfbNewTCPOrUDPClient(rfbScreenInfoPtr rfbScreen,
         return NULL;
       }
 #endif
-
+      rfbSetProtocolVersion(rfbScreen, rfbProtocolMajorVersion, rfbProtocolMinorVersion );
       sprintf(pv,rfbProtocolVersionFormat,rfbScreen->protocolMajorVersion, 
               rfbScreen->protocolMinorVersion);
-
+	  rfbLog("\nReplying %s\n", pv);
       if (rfbWriteExact(cl, pv, sz_rfbProtocolVersionMsg) < 0) {
         rfbLogPerror("rfbNewClient: write");
         rfbCloseClient(cl);
@@ -1246,7 +1247,7 @@ typedef struct {
 
 rfbBool rfbFilenameTranslate2UNIX(rfbClientPtr cl, char *path, char *unixPath)
 {
-    int x;
+    unsigned int x;
     char *home=NULL;
 
     FILEXFER_ALLOWED_OR_CLOSE_AND_RETURN("", cl, FALSE);
@@ -1273,7 +1274,7 @@ rfbBool rfbFilenameTranslate2UNIX(rfbClientPtr cl, char *path, char *unixPath)
 
 rfbBool rfbFilenameTranslate2DOS(rfbClientPtr cl, char *unixPath, char *path)
 {
-    int x;
+    unsigned int x;
 
     FILEXFER_ALLOWED_OR_CLOSE_AND_RETURN("", cl, FALSE);
 
@@ -1465,7 +1466,7 @@ rfbBool rfbSendFileTransferChunk(rfbClientPtr cl)
                     rfbLog("Compressed the packet from %d -> %d bytes\n", nMaxCompSize, bytesRead);
                     */
                     
-                    if ((nRetC==0) && (nMaxCompSize<bytesRead))
+                    if ((nRetC==0) && (nMaxCompSize< (unsigned)bytesRead))
                         return  rfbSendFileTransferMessage(cl, rfbFilePacket, 0, 1, nMaxCompSize, (char *)compBuf);
                     else
                         return  rfbSendFileTransferMessage(cl, rfbFilePacket, 0, 0, bytesRead, (char *)readBuf);

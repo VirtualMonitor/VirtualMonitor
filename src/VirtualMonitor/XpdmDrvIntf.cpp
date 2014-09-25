@@ -388,7 +388,7 @@ int XpdmDrvIntf::GetEvent(Event &evt)
         dwStatus = WaitForMultipleObjects(sizeof(events.event)/sizeof(events.event[0]),
                                           (const HANDLE*)&events.event,
                                           FALSE,
-                                          INFINITE); 
+                                          500); 
         if (dwStatus == WAIT_OBJECT_0) {
             ret = ExtEscape(hDC, VM_CTL_GET_DIRTY_EARA, 0, NULL, 
                         sizeof(dirtyRect),
@@ -408,7 +408,7 @@ int XpdmDrvIntf::GetEvent(Event &evt)
 					continue;
 				}
 			}
-            evt.code = EVENT_DITRY_AREA;
+            evt.code = EVENT_DIRTY_AREA;
             evt.dirtyArea.left = dirtyRect.left;
             evt.dirtyArea.top = dirtyRect.top;
             evt.dirtyArea.right = dirtyRect.right;
@@ -423,7 +423,12 @@ int XpdmDrvIntf::GetEvent(Event &evt)
             // Quit
             evt.code = EVENT_QUIT;
             return 0;
-        } else {
+        } 
+		else if (dwStatus == WAIT_TIMEOUT) {
+		    evt.code = EVENT_TIMEOUT;
+			return 0;
+		}
+		else {
 			return -1;
 		}
     }

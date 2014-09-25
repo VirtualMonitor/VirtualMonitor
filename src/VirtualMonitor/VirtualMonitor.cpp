@@ -39,6 +39,9 @@ struct DisplayIntfObj displayIntf[] = {
     { VNCDisplayProbe, "VNC Display"},
 };
 
+#define FULL_REFRESH_CYCLE 10
+
+
 static DrvIntf *drvIntfObj = NULL;
 #define MAX_DISPLAY_INTF 3
 static Display *displayIntfObj[MAX_DISPLAY_INTF];
@@ -148,10 +151,20 @@ int VirtualMonitorMain(DisplayParam cmd)
         }
     }
     RTPrintf("%d Display Intf Object\n", displayIntfCnt);
-
+	DWORD counter = 0;
     Event evt;
     while (drvIntfObj->GetEvent(evt) == 0) {
-        if (evt.code == EVENT_DITRY_AREA) {
+        if (evt.code == EVENT_DIRTY_AREA || evt.code == EVENT_TIMEOUT ) {
+		
+		if ( (evt.code == EVENT_TIMEOUT) ||
+			((++counter) % FULL_REFRESH_CYCLE == 0))
+		{
+			evt.dirtyArea.left = 0;
+			evt.dirtyArea.top = 0;
+			evt.dirtyArea.right = cmd.x;
+			evt.dirtyArea.bottom = cmd.y;
+			counter = 0;
+		}
 #if 0
             RTPrintf("Dirty: lef: %d, top: %d, right: %d bottom: %d\n", 
                     evt.dirtyArea.left,
@@ -174,7 +187,8 @@ int VirtualMonitorMain(DisplayParam cmd)
                              evt.dirtyArea.right,
                              evt.dirtyArea.bottom);
             }
-        } else if (evt.code == EVENT_QUIT) {
+        } 
+		else if (evt.code == EVENT_QUIT) {
             RTPrintf("Quit\n");
             break;
         }
