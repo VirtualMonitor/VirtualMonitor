@@ -187,49 +187,41 @@ bool ReadTextFile(const char* pFileName, lineCallBack fun)
 	return success;
 }
 
-static int confGroup = 0;
 static int techVehicle = 0;
-
-bool GetConfigGroup (const char *pLine, const int len)
-{
-	bool retVal = true;
-	unsigned int tech = 0, group = 0;
-	if (pLine != NULL && len > 0)
-	{
-		if ( 2 == sscanf(pLine, "%d %d", &tech, &group))
-		{
-			if ( tech == techVehicle)
-			{
-				printf("\nTechnical Veh %d in Group %d",tech,group );
-				confGroup = group;
-				retVal = false;
-			}
-		}
-	}
-	return retVal;
-}
+static int defaultx = 1280, defaulty = 800;
 
 bool GetResolution (const char *pLine, const int len)
 {
 	bool retVal = true;
-	int conf = 0, x = 0, y = 0;
+	int number = 0, x = 0, y = 0;
+
+	
 	if (pLine != NULL && len > 0)
 	{
-		if ( 3 == sscanf(pLine, "%d %d %d", &conf, &x, &y))
+		if (strstr(pLine, "#"))
 		{
-			if ( conf == confGroup)
+			return true;
+		}
+		if ( 3 == sscanf(pLine, "%d %d %d", &number, &x, &y))
+		{
+			if ( techVehicle == number)
 			{
-				printf("\nGot configuration group %d resolution %d X %d",confGroup, x, y );
+				printf("\nGot Techical Vehicle %d resolution %d X %d",techVehicle, x, y );
 				cmdParam.x = x;
 				cmdParam.y = y;
 				retVal = false;
+			}
+			else if (number == 0 && x && y)
+			{
+				defaultx = x;
+				defaulty = y;	
+			    printf("\nUpdating default resolution %d X %d",x, y );
 			}
 		}
 	}
 	return retVal;
 }
 
-const char configGroup[] = "d:\\Programs\\Ecu\\Config\\CnfGrp.txt";
 const char configVirtMonitor[] = "d:\\Programs\\Ecu\\Config\\CnfVirtualMonitor.txt";
 				
 int decode_cmd(int argc, char **argv)
@@ -320,15 +312,13 @@ int decode_cmd(int argc, char **argv)
 		else if (strcmp(argv[i], "-auto") == 0) 
 		{
 			char buffer[128];
+			cmdParam.x = 0;
+			cmdParam.y = 0;
 			DWORD retVal = GetEnvironmentVariableA("TRAPEZE_VEHICLE_NUMBER", buffer, 128);
 			if (retVal > 0 && retVal < 128)
 			{
 				techVehicle = atoi(buffer); 
 				RTPrintf("\nTrapeze Technical Vehicle number %d", techVehicle);
-				if ( ReadTextFile( configGroup, GetConfigGroup ) )
-				{
-					RTPrintf("\nTrapeze Vehicle Group %d", confGroup);
-				}
 				if ( ReadTextFile( configVirtMonitor, GetResolution ) )
 				{
 					RTPrintf("\nX resolution= %d Y resolution= %d",cmdParam.x, cmdParam.y );
@@ -341,10 +331,10 @@ int decode_cmd(int argc, char **argv)
 		}					
     }
     if (cmdParam.x == 0) {
-        cmdParam.x = 1280;
+        cmdParam.x = defaultx;
     }
     if (cmdParam.y == 0) {
-        cmdParam.y = 800;
+        cmdParam.y = defaulty;
     }
     if (cmdParam.bpp != 8 && cmdParam.bpp != 16 && cmdParam.bpp != 24 && cmdParam.bpp != 32) {
         cmdParam.bpp = 32;
