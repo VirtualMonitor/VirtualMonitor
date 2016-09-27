@@ -24,24 +24,30 @@ char *evn = "Hello";
 extern "C" char **_environ = &evn;
 extern DrvIntf *XpdmDrvProbe(DisplayParam &param);
 #endif
+#if defined (RT_OS_LINUX)
+extern DrvIntf *XDrvProbe(DisplayParam &param);
+#endif
 extern DrvIntf *DummyDrvProbe(DisplayParam &param);
+
 
 struct VirtualMonitorDrvObj DrvObj[] = {
 #if defined (RT_OS_WINDOWS)
     { XpdmDrvProbe, "XPDM Display Driver"},
 #endif
+#if defined(RT_OS_LINUX)
+    { XDrvProbe, "X11 Display Driver"},
+#endif
     { DummyDrvProbe, "Dummy Display Driver"},
 };
 
-
-extern Display *VNCDisplayProbe(DisplayParam &param, char *videoMemory);
+extern VDisplay *VNCDisplayProbe(DisplayParam &param, char *videoMemory);
 struct DisplayIntfObj displayIntf[] = {
     { VNCDisplayProbe, "VNC Display"},
 };
 
 static DrvIntf *drvIntfObj = NULL;
 #define MAX_DISPLAY_INTF 3
-static Display *displayIntfObj[MAX_DISPLAY_INTF];
+static VDisplay *displayIntfObj[MAX_DISPLAY_INTF];
 static int displayIntfCnt = 0;
 
 #if defined (RT_OS_WINDOWS)
@@ -129,7 +135,7 @@ int VirtualMonitorMain(DisplayParam cmd)
     drvIntfObj->Enable();
 	videoMemory = drvIntfObj->GetVideoMemory();
 
-    Display *disp;
+    VDisplay *disp;
     for (int i = 0; i < RT_ELEMENTS(displayIntf); i++) {
         disp = displayIntf[i].pfnDispIntfProbe(cmd, videoMemory);
         RTPrintf("Create %s %s %p\n", displayIntf[i].IntfDesc, disp ? "Successful" : "Failed", videoMemory);

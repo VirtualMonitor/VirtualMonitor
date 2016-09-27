@@ -15,7 +15,7 @@ struct VirtualMonitorDrvObj {
     char *DrvDesc;
 };
 
-typedef DECLCALLBACK(Display *)  FNDISPLAYPROBE(DisplayParam &param, char *videoMemory);
+typedef DECLCALLBACK(VDisplay *)  FNDISPLAYPROBE(DisplayParam &param, char *videoMemory);
 /** Pointer to a FNPDMDRVCONSTRUCT() function. */
 typedef FNDISPLAYPROBE *PFNDISPLAYPROBE;
 

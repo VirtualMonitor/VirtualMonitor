@@ -72,7 +72,7 @@ SETUP_WINE=
 TARGET_MACHINE=""
 TARGET_CPU=""
 WITH_XPCOM=1
-WITH_PYTHON=1
+WITH_PYTHON=0
 WITH_JAVA=1
 WITH_VMMRAW=1
 WITH_LIBIDL=1
@@ -417,7 +417,7 @@ check_gcc()
              -o \( $cc_maj -eq 4 -a $cc_min -gt 7 \) \
              -o $cc_maj -gt 4 ]; then
         log_failure "gcc version $cc_ver found, expected gcc 3.x with x>1 or gcc 4.x with 0<x<8"
-        fail really
+        # fail really
       else
         log_success "found version $cc_ver"
       fi

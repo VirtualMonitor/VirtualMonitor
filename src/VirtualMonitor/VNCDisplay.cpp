@@ -176,7 +176,7 @@ void VNCDisplay::vncKeyboardEvent(rfbBool down, rfbKeySym keycode, rfbClientPtr 
     VNCDisplay *instance = static_cast<VNCDisplay*>(cl->screen->screenData);
 }
 
-Display *VNCDisplayProbe(DisplayParam &param, char* videoMemory)
+VDisplay *VNCDisplayProbe(DisplayParam &param, char* videoMemory)
 {
     VNCDisplay *vnc = new VNCDisplay();
     Assert(vnc);
@@ -219,6 +219,13 @@ int VNCDisplay::Update(uint32_t left, uint32_t top, uint32_t right, uint32_t bot
 {
     rfbMarkRectAsModified(vncServer, left, top, right, bottom);
     return 0;
+}
+
+VNCDisplay::VNCDisplay()
+    : uClients(0),
+      ipv4Port(0),
+      ipv6Port(0)
+{
 }
 
 VNCDisplay::~VNCDisplay()

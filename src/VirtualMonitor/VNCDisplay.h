@@ -33,9 +33,9 @@ typedef struct _VRDEINPUTPOINT
     unsigned uButtons;
 } VRDEINPUTPOINT;
 
-class VNCDisplay : public Display {
+class VNCDisplay : public VDisplay {
 public:
-    VNCDisplay() {};
+    VNCDisplay();
     virtual ~VNCDisplay();
     virtual int Init(DisplayParam &param, char *pVideoMemory);
     virtual int Start();

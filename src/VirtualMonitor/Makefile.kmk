@@ -56,8 +56,12 @@ VirtualMonitor_DEFS.win.x86 = _WIN32_WINNT=0x0500 WIN32
 VirtualMonitor_SOURCES = \
     main.cpp \
 	DummyDrvIntf.cpp \
+	XDrvIntf.cpp \
 	VirtualMonitor.cpp \
-    VNCDisplay.cpp
+	VNCDisplay.cpp \
+	Timer.cpp \
+	Callback.cpp \
+	XPixelBuffer.cpp
 
 # Trick Fix Me later :)
 $(PATH_SUB_CURRENT)/VNCDisplay.cpp: FORCE
@@ -80,7 +84,9 @@ if1of ($(KBUILD_TARGET),os2 win)
   		$(PATH_ROOT)/src/libs/libvnc-0.9.9 \
         $(PATH_ROOT)/src/libs/zlib-1.2.6
 else
-	VirtualMonitor_LIBS += $(LIB_SDK_LIBVNC_VNC) crypt
+	VirtualMonitor_INCS += /usr/include/X11 \
+	/usr/include/X11/extensions
+	VirtualMonitor_LIBS += $(LIB_SDK_LIBVNC_VNC) crypt libXdamage X11 Xext libXrender
 endif
 
 FORCE:

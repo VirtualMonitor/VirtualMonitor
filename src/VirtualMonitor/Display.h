@@ -25,10 +25,10 @@ typedef struct _DisplayParam {
 	char *inputFile;
 } DisplayParam;
 
-class Display {
+class VDisplay {
 public:
-    Display () { xRes = yRes = bpp = pixelsLen = 0; pPixels = NULL; shareMemory = false;};
-    virtual ~Display() { };
+    VDisplay () { xRes = yRes = bpp = pixelsLen = 0; pPixels = NULL; shareMemory = false;};
+    virtual ~VDisplay() { };
     virtual int Init(DisplayParam &param, char *pVideoMemory) = 0;
     virtual int Start() = 0;
     virtual int Stop() = 0;
